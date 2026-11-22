@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">وی‌لاین</string>
+    <string name="vpn_service_description">تونل ارتباطی امن با تفکیک هوشمند سایت‌های داخلی و اینترنت نیم‌بها</string>
+    <string name="login_title">ورود به حساب کاربری</string>
+    <string name="username">نام کاربری</string>
+    <string name="password">رمز عبور</string>
+    <string name="login_button">ورود</string>
+    <string name="login_error">نام کاربری یا رمز عبور نامعتبر است.</string>
+    <string name="connect">اتصال</string>
+    <string name="disconnect">قطع اتصال</string>
+    <string name="connecting">در حال اتصال…</string>
+    <string name="connected">متصل هستی</string>
+    <string name="disconnected">اتصال برقرار نیست</string>
+    <string name="error">خطا در اتصال</string>
+    <string name="speed_test">تست سرعت</string>
+    <string name="speed_test_failed">تست سرعت ناموفق بود؛ دوباره تلاش کن</string>
+    <string name="ping_ms">%1$d میلی‌ثانیه</string>
+    <string name="ping_testing">در حال بررسی…</string>
+    <string name="remaining_traffic">%1$s</string>
+    <string name="remaining_days">%1$d روز</string>
+    <string name="domestic_card_title">اینترنت نیم‌بها و سایت‌های داخلی</string>
+    <string name="domestic_card_subtitle">دسترسی به سایت‌های داخلی و بانکی</string>
+    <string name="domestic_active">اینترنت نیم‌بها برای سایت‌های داخلی فعاله</string>
+    <string name="renewal_button">تمدید اشتراک</string>
+    <string name="support">پشتیبانی</string>
+    <string name="logout">خروج از حساب</string>
+    <string name="refresh">بروزرسانی سرویس</string>
+</resources>

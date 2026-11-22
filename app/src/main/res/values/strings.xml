@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">VLine VPN</string>
+    <string name="vpn_service_description">Secure encrypted tunnel with automatic Iran domestic bypass</string>
+    <string name="login_title">Account Login</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_error">Authentication failed. Check your credentials.</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="error">Connection Error</string>
+    <string name="speed_test">Speed Test</string>
+    <string name="speed_test_failed">Speed test failed; try again</string>
+    <string name="ping_ms">%1$d ms</string>
+    <string name="ping_testing">Testing...</string>
+    <string name="remaining_traffic">%1$s</string>
+    <string name="remaining_days">%1$d Days</string>
+    <string name="domestic_card_title">Domestic Iranian Traffic</string>
+    <string name="domestic_card_subtitle">Direct access to local &amp; banking sites</string>
+    <string name="domestic_active">Domestic traffic bypass enabled</string>
+    <string name="renewal_button">Renew Subscription</string>
+    <string name="support">Support</string>
+    <string name="logout">Logout</string>
+    <string name="refresh">Refresh</string>
+</resources>

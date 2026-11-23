@@ -158,6 +158,84 @@ class SubscriptionRepository(
         }
     }
 
+    suspend fun getRenewInfo(usernameOverride: String? = null): Result<com.vpnclient.app.data.api.models.RenewInfoData> = withContext(Dispatchers.IO) {
+        try {
+            val username = usernameOverride ?: preferenceManager.username ?: ""
+            val api = ApiClient.getService(preferenceManager)
+            val response = api.getRenewInfo(username)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.data != null) {
+                    Result.success(body.data)
+                } else {
+                    Result.failure(Exception(body.error ?: "اطلاعات تمدید یافت نشد"))
+                }
+            } else {
+                Result.failure(Exception("خطا در دریافت اطلاعات تمدید (کد ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun submitOrderRenew(
+        planId: String,
+        paymentMethod: String, // "wallet" or "card"
+        trackingCode: String? = null,
+        receiptBase64: String? = null,
+        note: String? = null
+    ): Result<com.vpnclient.app.data.api.models.OrderRenewResponse> = withContext(Dispatchers.IO) {
+        try {
+            val username = preferenceManager.username ?: ""
+            val api = ApiClient.getService(preferenceManager)
+            val request = com.vpnclient.app.data.api.models.OrderRenewRequest(
+                username = username,
+                planId = planId,
+                paymentMethod = paymentMethod,
+                trackingCode = trackingCode,
+                receiptBase64 = receiptBase64,
+                note = note
+            )
+            val response = api.submitOrderRenew(request)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception(body.error ?: "خطا در ثبت سفارش تمدید"))
+                }
+            } else {
+                Result.failure(Exception("خطا در ارسال سفارش به سرور (کد ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getOrderStatus(
+        orderId: Long? = null,
+        orderNumber: String? = null,
+        usernameOverride: String? = null
+    ): Result<com.vpnclient.app.data.api.models.OrderStatusData> = withContext(Dispatchers.IO) {
+        try {
+            val username = usernameOverride ?: preferenceManager.username
+            val api = ApiClient.getService(preferenceManager)
+            val response = api.getOrderStatus(orderId = orderId, orderNumber = orderNumber, username = username)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.data != null) {
+                    Result.success(body.data)
+                } else {
+                    Result.failure(Exception(body.error ?: "سفارش یافت نشد"))
+                }
+            } else {
+                Result.failure(Exception("خطا در استعلام وضعیت سفارش (کد ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun decodeSubscriptionContent(content: String): String {
         return try {
             val clean = content.replace("\n", "").replace("\r", "").trim()

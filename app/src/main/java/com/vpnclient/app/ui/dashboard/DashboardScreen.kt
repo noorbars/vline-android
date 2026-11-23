@@ -556,27 +556,49 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // 3. Subscription Renewal Action Button
+                val isSubExpired = uiState.userProfile?.isExpired == true
+                val daysRem = uiState.userProfile?.daysRemaining
+                val isNearExpiry = daysRem != null && daysRem <= 3
+
+                val renewBtnColor = when {
+                    isSubExpired -> AccentRed
+                    isNearExpiry -> Color(0xFFF59E0B)
+                    else -> PrimaryBlue
+                }
+
+                val renewBtnBg = when {
+                    isSubExpired -> AccentRed.copy(alpha = 0.16f)
+                    isNearExpiry -> Color(0xFFF59E0B).copy(alpha = 0.16f)
+                    else -> PrimaryBlue.copy(alpha = 0.12f)
+                }
+
+                val renewBtnText = when {
+                    isSubExpired -> "اشتراک شما منقضی شده است — لمس برای تمدید آنی"
+                    isNearExpiry -> "اعتبار اشتراک رو به اتمام است (${PersianDigits.convert(daysRem ?: 0L)} روز باقی‌مانده) — تمدید"
+                    else -> "تمدید اشتراک"
+                }
+
                 Button(
                     onClick = { viewModel.setRenewalSheetVisible(true) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue.copy(alpha = 0.12f)),
-                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.5f))
+                    colors = ButtonDefaults.buttonColors(containerColor = renewBtnBg),
+                    border = BorderStroke(1.2.dp, renewBtnColor.copy(alpha = 0.6f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Autorenew,
                         contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(18.dp)
+                        tint = renewBtnColor,
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "تمدید اشتراک",
-                        color = PrimaryBlue,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        text = renewBtnText,
+                        color = renewBtnColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
@@ -661,15 +683,14 @@ fun DashboardScreen(
         // Renewal Bottom Sheet
         if (uiState.isRenewalSheetVisible) {
             RenewalBottomSheet(
-                username = uiState.username,
-                isSubmitting = uiState.isSubmittingRenewal,
-                isSubmittedSuccess = uiState.renewalSubmittedSuccess,
-                submittedOrderNumber = uiState.submittedOrderNumber,
-                submittedPlanName = uiState.renewalPlanName,
-                errorMessage = uiState.renewalErrorMessage,
+                uiState = uiState,
                 onDismiss = { viewModel.setRenewalSheetVisible(false) },
-                onSubmit = { plan, trackingCode, receiptBase64, note ->
-                    viewModel.submitRenewalRequest(plan, trackingCode, receiptBase64, note)
+                onRefreshInfo = { viewModel.loadRenewInfo() },
+                onSubmitOrder = { planId, planTitle, method, trackingCode, receiptBase64, note ->
+                    viewModel.submitOrderRenew(planId, planTitle, method, trackingCode, receiptBase64, note)
+                },
+                onCheckStatus = { orderId, orderNumber ->
+                    viewModel.checkOrderStatus(orderId, orderNumber)
                 }
             )
         }

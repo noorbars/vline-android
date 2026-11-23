@@ -26,6 +26,16 @@ data class UserProfile(
             return if (diff > 0) TimeUnit.MILLISECONDS.toDays(diff) else 0L
         }
 
+    val isExpired: Boolean
+        get() {
+            if (expireTimestamp <= 0L) return false
+            val expireMillis = if (expireTimestamp < 10000000000L) expireTimestamp * 1000 else expireTimestamp
+            return expireMillis <= System.currentTimeMillis()
+        }
+
+    val daysRemaining: Long
+        get() = remainingDays
+
     fun formattedRemainingTraffic(): String {
         val bytes = remainingBytes
         if (bytes < 0L) return "نامحدود"

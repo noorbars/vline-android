@@ -244,8 +244,125 @@ class DashboardViewModel(
                 isRenewalSheetVisible = visible,
                 isSubmittingRenewal = false,
                 renewalSubmittedSuccess = false,
+                isWalletRenewSuccess = false,
                 renewalErrorMessage = null
             )
+        }
+        if (visible) {
+            loadRenewInfo()
+        }
+    }
+
+    fun loadRenewInfo() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingRenewInfo = true, renewInfoError = null) }
+            val result = subscriptionRepository.getRenewInfo()
+            if (result.isSuccess) {
+                val data = result.getOrNull()
+                _uiState.update {
+                    it.copy(
+                        isLoadingRenewInfo = false,
+                        renewInfoData = data,
+                        renewInfoError = null,
+                        submittedOrderId = data?.pendingOrder?.orderId,
+                        submittedOrderNumber = data?.pendingOrder?.orderNumber
+                    )
+                }
+                // If there's an existing pending order, check its latest status
+                data?.pendingOrder?.let { pending ->
+                    checkOrderStatus(orderId = pending.orderId, orderNumber = pending.orderNumber)
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoadingRenewInfo = false,
+                        renewInfoError = result.exceptionOrNull()?.localizedMessage ?: "خطا در دریافت اطلاعات تمدید"
+                    )
+                }
+            }
+        }
+    }
+
+    fun submitOrderRenew(
+        planId: String,
+        planTitle: String,
+        paymentMethod: String, // "wallet" or "card"
+        trackingCode: String? = null,
+        receiptBase64: String? = null,
+        note: String? = null
+    ) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isSubmittingRenewal = true,
+                    renewalErrorMessage = null,
+                    renewalSubmittedSuccess = false,
+                    isWalletRenewSuccess = false
+                )
+            }
+
+            val result = subscriptionRepository.submitOrderRenew(
+                planId = planId,
+                paymentMethod = paymentMethod,
+                trackingCode = trackingCode,
+                receiptBase64 = receiptBase64,
+                note = note
+            )
+
+            if (result.isSuccess) {
+                val response = result.getOrNull()
+                val isWallet = paymentMethod == "wallet" && response?.isApproved == true
+                _uiState.update {
+                    it.copy(
+                        isSubmittingRenewal = false,
+                        renewalSubmittedSuccess = true,
+                        isWalletRenewSuccess = isWallet,
+                        renewalPlanName = planTitle,
+                        submittedOrderId = response?.orderId,
+                        submittedOrderNumber = response?.orderNumber ?: "VL-RENEW",
+                        renewalErrorMessage = null
+                    )
+                }
+                if (isWallet) {
+                    // Instantly refresh subscription on dashboard
+                    refreshData()
+                    loadRenewInfo()
+                } else {
+                    // Check order status and start polling
+                    response?.orderId?.let { oId ->
+                        checkOrderStatus(orderId = oId, orderNumber = response.orderNumber)
+                    }
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isSubmittingRenewal = false,
+                        renewalErrorMessage = result.exceptionOrNull()?.localizedMessage ?: "خطا در ثبت سفارش تمدید"
+                    )
+                }
+            }
+        }
+    }
+
+    fun checkOrderStatus(orderId: Long? = null, orderNumber: String? = null) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCheckingOrderStatus = true) }
+            val result = subscriptionRepository.getOrderStatus(orderId = orderId, orderNumber = orderNumber)
+            if (result.isSuccess) {
+                val statusData = result.getOrNull()
+                _uiState.update {
+                    it.copy(
+                        isCheckingOrderStatus = false,
+                        activeOrderStatus = statusData
+                    )
+                }
+                if (statusData?.isApproved == true) {
+                    // Order approved! Update dashboard and subscription
+                    refreshData()
+                }
+            } else {
+                _uiState.update { it.copy(isCheckingOrderStatus = false) }
+            }
         }
     }
 
@@ -259,43 +376,14 @@ class DashboardViewModel(
         receiptBase64: String?,
         note: String
     ) {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isSubmittingRenewal = true,
-                    renewalErrorMessage = null
-                )
-            }
-
-            val result = subscriptionRepository.submitRenewal(
-                planId = plan.id,
-                planTitle = plan.title,
-                amount = plan.priceToman,
-                trackingCode = trackingCode,
-                receiptBase64 = receiptBase64,
-                note = note
-            )
-
-            if (result.isSuccess) {
-                val response = result.getOrNull()
-                _uiState.update {
-                    it.copy(
-                        isSubmittingRenewal = false,
-                        renewalSubmittedSuccess = true,
-                        renewalPlanName = plan.title,
-                        submittedOrderNumber = response?.orderNumber ?: "VL-RENEW",
-                        renewalErrorMessage = null
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isSubmittingRenewal = false,
-                        renewalErrorMessage = result.exceptionOrNull()?.localizedMessage ?: "خطا در ثبت درخواست تمدید"
-                    )
-                }
-            }
-        }
+        submitOrderRenew(
+            planId = plan.id,
+            planTitle = plan.title,
+            paymentMethod = "card",
+            trackingCode = trackingCode,
+            receiptBase64 = receiptBase64,
+            note = note
+        )
     }
 
     fun logout(context: Context) {

@@ -8,8 +8,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // Configurable backend API base URL (can be changed to your domain/VPS IP)
-    var BASE_URL = "https://vline-vip-bot.gibfo5302.workers.dev/"
+    // Backend API base URL
+    var BASE_URL = "https://api.eltpro.ir/"
 
     private var retrofit: Retrofit? = null
 

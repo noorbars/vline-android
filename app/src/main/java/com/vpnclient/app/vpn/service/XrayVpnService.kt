@@ -89,7 +89,15 @@ class XrayVpnService : VpnService() {
     private fun startTunnel(rawConfigString: String, routeKey: String?) {
         connectJob?.cancel()
         _vpnState.value = VpnState.Connecting
-        startForeground(NOTIFICATION_ID, buildNotification("در حال اتصال به سرور..."))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID,
+                buildNotification("در حال اتصال به سرور..."),
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification("در حال اتصال به سرور..."))
+        }
 
         connectJob = serviceScope.launch {
             try {
@@ -315,7 +323,7 @@ class XrayVpnService : VpnService() {
             controller.startLoop(configJson, tunFd)
 
             Log.i(TAG, "Libv2ray CoreController started successfully with TUN fd: $tunFd")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             val errorMsg = e.localizedMessage ?: e.message ?: e.toString()
             Log.e(TAG, "Error starting Xray engine", e)
             throw IllegalStateException("خطا در هسته Xray: $errorMsg")
@@ -326,7 +334,7 @@ class XrayVpnService : VpnService() {
         try {
             coreController?.stopLoop()
             Log.i(TAG, "Libv2ray CoreController stopped")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Notice on stopLoop: ${e.message}")
         } finally {
             coreController = null

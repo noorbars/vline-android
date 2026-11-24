@@ -20,53 +20,57 @@ object AssetManagerHelper {
 
     fun isGeoSiteValid(context: Context): Boolean {
         val f1 = File(getAssetDir(context), "geosite.dat")
-        val f2 = File(context.filesDir, "geosite.dat")
-        return (f1.exists() && f1.length() >= MIN_VALID_SIZE) || (f2.exists() && f2.length() >= MIN_VALID_SIZE)
+        return f1.exists() && f1.length() >= MIN_VALID_SIZE
     }
 
     fun isGeoIpValid(context: Context): Boolean {
         val f1 = File(getAssetDir(context), "geoip.dat")
-        val f2 = File(context.filesDir, "geoip.dat")
-        return (f1.exists() && f1.length() >= MIN_VALID_SIZE) || (f2.exists() && f2.length() >= MIN_VALID_SIZE)
+        return f1.exists() && f1.length() >= MIN_VALID_SIZE
     }
 
     fun copyGeoAssetsIfNeeded(context: Context) {
-        val targetDirs = listOf(getAssetDir(context), context.filesDir)
+        val dir = getAssetDir(context)
 
-        for (dir in targetDirs) {
-            for (fileName in GEO_FILES) {
-                val targetFile = File(dir, fileName)
-                // If corrupted or partial (less than 5MB), delete it to prevent EOF crashes
-                if (targetFile.exists() && targetFile.length() < MIN_VALID_SIZE) {
-                    Log.w(TAG, "Deleting corrupt/truncated $fileName (${targetFile.length()} bytes)")
-                    targetFile.delete()
-                }
+        // Clean up any legacy duplicates in filesDir root to save RAM/storage on budget devices
+        for (fileName in GEO_FILES) {
+            val legacyFile = File(context.filesDir, fileName)
+            if (legacyFile.exists()) {
+                legacyFile.delete()
+            }
+        }
 
-                if (!targetFile.exists()) {
-                    try {
-                        context.assets.open(fileName).use { input ->
-                            val tempFile = File(dir, "$fileName.tmp")
-                            FileOutputStream(tempFile).use { output ->
-                                val buffer = ByteArray(64 * 1024)
-                                var read: Int
-                                while (input.read(buffer).also { read = it } != -1) {
-                                    output.write(buffer, 0, read)
-                                }
-                                output.flush()
+        for (fileName in GEO_FILES) {
+            val targetFile = File(dir, fileName)
+            // If corrupted or partial (less than 5MB), delete it to prevent EOF crashes
+            if (targetFile.exists() && targetFile.length() < MIN_VALID_SIZE) {
+                Log.w(TAG, "Deleting corrupt/truncated $fileName (${targetFile.length()} bytes)")
+                targetFile.delete()
+            }
+
+            if (!targetFile.exists()) {
+                try {
+                    context.assets.open(fileName).use { input ->
+                        val tempFile = File(dir, "$fileName.tmp")
+                        FileOutputStream(tempFile).use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            var read: Int
+                            while (input.read(buffer).also { read = it } != -1) {
+                                output.write(buffer, 0, read)
                             }
-
-                            if (tempFile.length() >= MIN_VALID_SIZE) {
-                                if (targetFile.exists()) targetFile.delete()
-                                tempFile.renameTo(targetFile)
-                                Log.i(TAG, "Successfully extracted $fileName (${targetFile.length()} bytes) to ${targetFile.absolutePath}")
-                            } else {
-                                Log.w(TAG, "Extraction of $fileName produced partial file (${tempFile.length()} bytes), discarding")
-                                tempFile.delete()
-                            }
+                            output.flush()
                         }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Could not extract asset $fileName: ${e.message}")
+
+                        if (tempFile.length() >= MIN_VALID_SIZE) {
+                            if (targetFile.exists()) targetFile.delete()
+                            tempFile.renameTo(targetFile)
+                            Log.i(TAG, "Successfully extracted $fileName (${targetFile.length()} bytes) to ${targetFile.absolutePath}")
+                        } else {
+                            Log.w(TAG, "Extraction of $fileName produced partial file (${tempFile.length()} bytes), discarding")
+                            tempFile.delete()
+                        }
                     }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not extract asset $fileName: ${e.message}")
                 }
             }
         }

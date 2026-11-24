@@ -11,8 +11,8 @@ android {
         applicationId = "com.vpnclient.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -21,6 +21,15 @@ android {
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a")
+            isUniversalApk = true
         }
     }
 
@@ -52,6 +61,9 @@ android {
         kotlinCompilerExtensionVersion = "1.5.11"
     }
     packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -65,7 +77,9 @@ android {
     applicationVariants.all {
         outputs.all {
             (this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl)?.let { output ->
-                output.outputFileName = "VLineClient-v${versionName}.apk"
+                val abiFilter = output.getFilter(com.android.build.OutputFile.ABI)
+                val abiSuffix = if (!abiFilter.isNullOrBlank()) "-$abiFilter" else ""
+                output.outputFileName = "VLineClient-v${versionName}${abiSuffix}.apk"
             }
         }
     }

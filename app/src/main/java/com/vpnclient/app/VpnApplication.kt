@@ -20,7 +20,7 @@ class VpnApplication : Application() {
 
         createNotificationChannel()
 
-        // 1. Initialize Gomobile GoSeq context
+        // 1. Initialize Gomobile GoSeq context safely
         try {
             val seqClass = Class.forName("go.Seq")
             try {
@@ -31,12 +31,14 @@ class VpnApplication : Application() {
                 setContextMethod.invoke(null, this)
             }
             Log.i("VpnApplication", "go.Seq context initialized successfully")
-        } catch (e: Exception) {
-            Log.w("VpnApplication", "go.Seq init notice: ${e.message}")
+        } catch (t: Throwable) {
+            Log.w("VpnApplication", "go.Seq init notice: ${t.message}")
         }
 
-        // 2. Extract geoip.dat and geosite.dat for Xray routing engine
-        AssetManagerHelper.copyGeoAssetsIfNeeded(this)
+        // 2. Extract geoip.dat and geosite.dat for Xray routing engine in background
+        Thread {
+            AssetManagerHelper.copyGeoAssetsIfNeeded(this)
+        }.start()
     }
 
     private fun createNotificationChannel() {

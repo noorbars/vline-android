@@ -64,20 +64,41 @@ class UpdateManager(
                 val releaseNotes = json.get("body")?.asString ?: "تغییرات این نسخه ثبت نشده است."
                 val htmlUrl = json.get("html_url")?.asString ?: "https://github.com/$gitHubRepo"
 
-                // Find APK asset in the release
+                // Find APK asset in the release matching device architecture
                 var downloadUrl: String? = null
                 var fileSize = 0L
 
                 val assets = json.getAsJsonArray("assets")
                 if (assets != null) {
+                    val supportedAbis = Build.SUPPORTED_ABIS.toList()
+                    val isOnly32Bit = supportedAbis.none { it.contains("64") }
+
+                    var bestAsset: com.google.gson.JsonObject? = null
+                    var universalAsset: com.google.gson.JsonObject? = null
+                    var fallbackAsset: com.google.gson.JsonObject? = null
+
                     for (assetElement in assets) {
                         val assetObj = assetElement.asJsonObject
                         val name = assetObj.get("name")?.asString ?: ""
-                        if (name.endsWith(".apk", ignoreCase = true)) {
-                            downloadUrl = assetObj.get("browser_download_url")?.asString
-                            fileSize = assetObj.get("size")?.asLong ?: 0L
+                        if (!name.endsWith(".apk", ignoreCase = true)) continue
+
+                        if (fallbackAsset == null) fallbackAsset = assetObj
+
+                        if (isOnly32Bit && name.contains("armeabi-v7a", ignoreCase = true)) {
+                            bestAsset = assetObj
                             break
+                        } else if (!isOnly32Bit && name.contains("arm64-v8a", ignoreCase = true)) {
+                            bestAsset = assetObj
+                            break
+                        } else if (name.contains("universal", ignoreCase = true) || !name.contains("-arm")) {
+                            universalAsset = assetObj
                         }
+                    }
+
+                    val chosenAsset = bestAsset ?: universalAsset ?: fallbackAsset
+                    if (chosenAsset != null) {
+                        downloadUrl = chosenAsset.get("browser_download_url")?.asString
+                        fileSize = chosenAsset.get("size")?.asLong ?: 0L
                     }
                 }
 

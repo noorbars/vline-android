@@ -33,6 +33,7 @@ data class DashboardUiState(
     val isValidatingCoupon: Boolean = false,
     val appliedCoupon: com.vpnclient.app.data.api.models.CouponData? = null,
     val couponError: String? = null,
+    val useWalletPartial: Boolean = false,
     val selectedRoute: RouteCategory = RouteCategory.SMART,
     val isRouteSheetVisible: Boolean = false,
     val selectedLocation: ServerLocation = LocationManager.availableLocations.first(),

@@ -685,7 +685,8 @@ fun DashboardScreen(
                 },
                 onCouponCodeChanged = { viewModel.onCouponCodeChanged(it) },
                 onValidateCoupon = { planId -> viewModel.validateCoupon(planId) },
-                onClearCoupon = { viewModel.clearCoupon() }
+                onClearCoupon = { viewModel.clearCoupon() },
+                onUseWalletPartialChanged = { viewModel.onUseWalletPartialChanged(it) }
             )
         }
 

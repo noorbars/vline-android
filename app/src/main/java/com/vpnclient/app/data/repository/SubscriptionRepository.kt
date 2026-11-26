@@ -184,7 +184,8 @@ class SubscriptionRepository(
         trackingCode: String? = null,
         receiptBase64: String? = null,
         note: String? = null,
-        couponCode: String? = null
+        couponCode: String? = null,
+        useWallet: Boolean = false
     ): Result<com.vpnclient.app.data.api.models.OrderRenewResponse> = withContext(Dispatchers.IO) {
         try {
             val username = preferenceManager.username ?: ""
@@ -196,7 +197,8 @@ class SubscriptionRepository(
                 trackingCode = trackingCode,
                 receiptBase64 = receiptBase64,
                 note = note,
-                couponCode = couponCode
+                couponCode = couponCode,
+                useWallet = useWallet
             )
             val response = api.submitOrderRenew(request)
             if (response.isSuccessful && response.body() != null) {

@@ -63,6 +63,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -116,7 +118,8 @@ fun RenewalBottomSheet(
     onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
     onCouponCodeChanged: (String) -> Unit = {},
     onValidateCoupon: (String) -> Unit = {},
-    onClearCoupon: () -> Unit = {}
+    onClearCoupon: () -> Unit = {},
+    onUseWalletPartialChanged: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -134,7 +137,8 @@ fun RenewalBottomSheet(
             onCheckStatus = onCheckStatus,
             onCouponCodeChanged = onCouponCodeChanged,
             onValidateCoupon = onValidateCoupon,
-            onClearCoupon = onClearCoupon
+            onClearCoupon = onClearCoupon,
+            onUseWalletPartialChanged = onUseWalletPartialChanged
         )
     }
 }
@@ -148,7 +152,8 @@ fun RenewScreenContent(
     onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
     onCouponCodeChanged: (String) -> Unit = {},
     onValidateCoupon: (String) -> Unit = {},
-    onClearCoupon: () -> Unit = {}
+    onClearCoupon: () -> Unit = {},
+    onUseWalletPartialChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val decimalFormatter = remember { DecimalFormat("#,###") }
@@ -880,8 +885,60 @@ fun RenewScreenContent(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // --- WALLET INSTANT PAYMENT OPTION (IF BALANCE SUFFICIENT) ---
+                        // --- WALLET INSTANT OR PARTIAL PAYMENT OPTION ---
                         val currentWallet = renewData?.walletBalance ?: 0L
+                        val isPartialWalletActive = currentWallet in 1 until finalPrice && uiState.useWalletPartial
+                        val payableCardAmount = if (isPartialWalletActive) (finalPrice - currentWallet).coerceAtLeast(0L) else finalPrice
+
+                        if (currentWallet in 1 until finalPrice) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(PrimaryBlue.copy(alpha = 0.08f))
+                                    .border(1.dp, PrimaryBlue.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                    .clickable { onUseWalletPartialChanged(!uiState.useWalletPartial) }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountBalanceWallet,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "استفاده از موجودی کیف پول",
+                                            color = TextPrimary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "کسر ${PersianDigits.convert(decimalFormatter.format(currentWallet))} تومان از کل مبلغ",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                Switch(
+                                    checked = uiState.useWalletPartial,
+                                    onCheckedChange = onUseWalletPartialChanged,
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = PrimaryBlue
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
+
                         if (currentWallet >= finalPrice) {
                             Box(
                                 modifier = Modifier
@@ -1078,8 +1135,18 @@ fun RenewScreenContent(
                                     )
                                 }
 
+                                if (isPartialWalletActive) {
+                                    Text(
+                                        text = "کسر از کیف پول: -${PersianDigits.convert(decimalFormatter.format(currentWallet))} تومان",
+                                        color = AccentGreen,
+                                        fontSize = 11.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
                                 Text(
-                                    text = "مبلغ قابل پرداخت: ${PersianDigits.convert(decimalFormatter.format(finalPrice))} تومان",
+                                    text = "مبلغ قابل پرداخت: ${PersianDigits.convert(decimalFormatter.format(payableCardAmount))} تومان",
                                     color = PrimaryBlue,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,

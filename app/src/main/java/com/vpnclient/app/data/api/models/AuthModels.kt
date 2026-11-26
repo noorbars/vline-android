@@ -105,7 +105,8 @@ data class OrderRenewRequest(
     @SerializedName("tracking_code") val trackingCode: String? = null,
     @SerializedName("receipt_base64") val receiptBase64: String? = null,
     @SerializedName("note") val note: String? = null,
-    @SerializedName("coupon_code") val couponCode: String? = null
+    @SerializedName("coupon_code") val couponCode: String? = null,
+    @SerializedName("use_wallet") val useWallet: Boolean = false
 )
 
 data class CouponValidateRequest(
@@ -123,7 +124,7 @@ data class CouponValidateResponse(
 data class CouponData(
     @SerializedName("code") val code: String,
     @SerializedName("discount_amount") val discountAmount: Long,
-    @SerializedName("final_price") val finalPrice: Long,
+    @SerializedName("final_amount") val finalPrice: Long,
     @SerializedName("message") val message: String? = null
 )
 

@@ -261,12 +261,17 @@ class DashboardViewModel(
                 renewalErrorMessage = null,
                 couponCodeInput = "",
                 appliedCoupon = null,
-                couponError = null
+                couponError = null,
+                useWalletPartial = false
             )
         }
         if (visible) {
             loadRenewInfo()
         }
+    }
+
+    fun onUseWalletPartialChanged(enabled: Boolean) {
+        _uiState.update { it.copy(useWalletPartial = enabled) }
     }
 
     fun onCouponCodeChanged(code: String) {
@@ -363,7 +368,8 @@ class DashboardViewModel(
                 trackingCode = trackingCode,
                 receiptBase64 = receiptBase64,
                 note = note,
-                couponCode = _uiState.value.appliedCoupon?.code
+                couponCode = _uiState.value.appliedCoupon?.code,
+                useWallet = _uiState.value.useWalletPartial || paymentMethod == "wallet"
             )
 
             if (result.isSuccess) {

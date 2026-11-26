@@ -18,33 +18,50 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    fun setRegisterMode(isRegister: Boolean) {
+    fun setAuthMode(mode: AuthMode) {
         _uiState.update {
             it.copy(
-                isRegisterMode = isRegister,
+                authMode = mode,
                 errorMessage = null,
-                confirmPassword = ""
+                successMessage = null,
+                confirmPassword = "",
+                resetCode = "",
+                isResetCodeSent = false
             )
         }
     }
 
+    fun setRegisterMode(isRegister: Boolean) {
+        setAuthMode(if (isRegister) AuthMode.REGISTER else AuthMode.LOGIN)
+    }
+
     fun onUsernameChanged(username: String) {
-        _uiState.update { it.copy(username = username, errorMessage = null) }
+        _uiState.update { it.copy(username = username, errorMessage = null, successMessage = null) }
     }
 
     fun onPasswordChanged(password: String) {
-        _uiState.update { it.copy(password = password, errorMessage = null) }
+        _uiState.update { it.copy(password = password, errorMessage = null, successMessage = null) }
     }
 
     fun onConfirmPasswordChanged(confirmPassword: String) {
-        _uiState.update { it.copy(confirmPassword = confirmPassword, errorMessage = null) }
+        _uiState.update { it.copy(confirmPassword = confirmPassword, errorMessage = null, successMessage = null) }
+    }
+
+    fun onResetCodeChanged(resetCode: String) {
+        _uiState.update { it.copy(resetCode = resetCode, errorMessage = null, successMessage = null) }
     }
 
     fun submit() {
-        if (_uiState.value.isRegisterMode) {
-            register()
-        } else {
-            login()
+        when (_uiState.value.authMode) {
+            AuthMode.LOGIN -> login()
+            AuthMode.REGISTER -> register()
+            AuthMode.FORGOT_PASSWORD -> {
+                if (_uiState.value.isResetCodeSent) {
+                    resetPassword()
+                } else {
+                    forgotPassword()
+                }
+            }
         }
     }
 
@@ -66,7 +83,7 @@ class LoginViewModel(
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
         viewModelScope.launch {
             val result = authRepository.register(email, password)
@@ -105,7 +122,7 @@ class LoginViewModel(
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
         viewModelScope.launch {
             val result = authRepository.login(username, password)
@@ -131,6 +148,83 @@ class LoginViewModel(
                         it.copy(
                             isLoading = false,
                             errorMessage = error.localizedMessage ?: "نام کاربری یا رمز عبور نامعتبر است"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun forgotPassword() {
+        val email = _uiState.value.username.trim()
+        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.update { it.copy(errorMessage = "لطفاً آدرس ایمیل خود را به درستی وارد کنید") }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+
+        viewModelScope.launch {
+            val result = authRepository.forgotPassword(email)
+            result.fold(
+                onSuccess = { res ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isResetCodeSent = true,
+                            successMessage = res.message ?: "کد تایید ۶ رقمی به ایمیل شما ارسال شد.",
+                            errorMessage = null
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = err.localizedMessage ?: "خطا در ارسال کد بازیابی"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun resetPassword() {
+        val email = _uiState.value.username.trim()
+        val code = _uiState.value.resetCode.trim()
+        val newPass = _uiState.value.password.trim()
+
+        if (code.isBlank() || code.length < 4) {
+            _uiState.update { it.copy(errorMessage = "لطفاً کد تایید دریافتی را وارد کنید") }
+            return
+        }
+        if (newPass.length < 6) {
+            _uiState.update { it.copy(errorMessage = "رمز عبور جدید باید حداقل ۶ کاراکتر باشد") }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+
+        viewModelScope.launch {
+            val result = authRepository.resetPassword(email, code, newPass)
+            result.fold(
+                onSuccess = { res ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            authMode = AuthMode.LOGIN,
+                            isResetCodeSent = false,
+                            resetCode = "",
+                            successMessage = res.message ?: "رمز عبور با موفقیت تغییر یافت. اکنون وارد شوید.",
+                            errorMessage = null
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = err.localizedMessage ?: "کد تایید نامعتبر یا منقضی است"
                         )
                     }
                 }

@@ -65,8 +65,13 @@ import com.vpnclient.app.ui.theme.AccentGreen
 import com.vpnclient.app.ui.theme.AccentRed
 import com.vpnclient.app.ui.theme.BackgroundDark
 import com.vpnclient.app.ui.theme.CardBorder
+import com.vpnclient.app.ui.theme.HeroCardBorder
+import com.vpnclient.app.ui.theme.HeroCardDark
+import com.vpnclient.app.ui.theme.HeroCardSurface
 import com.vpnclient.app.ui.theme.PrimaryBlue
 import com.vpnclient.app.ui.theme.SurfaceDark
+import com.vpnclient.app.ui.theme.TextLightPrimary
+import com.vpnclient.app.ui.theme.TextLightSecondary
 import com.vpnclient.app.ui.theme.TextMuted
 import com.vpnclient.app.ui.theme.TextPrimary
 import com.vpnclient.app.ui.theme.TextSecondary
@@ -181,284 +186,294 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Center Area: Pulsing Button, Status Display & Route/Location Selectors
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            // Hero Obsidian Card: Connect Button, Status & Route/Location Selectors (Matching top card in reference image)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(26.dp), spotColor = Color(0x22000000))
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(HeroCardDark)
+                    .border(1.dp, HeroCardBorder, RoundedCornerShape(26.dp))
+                    .padding(vertical = 20.dp, horizontal = 16.dp)
             ) {
-                // Animated Pulsing Connect Button
-                PulsingConnectButton(
-                    vpnState = uiState.vpnState,
-                    onClick = {
-                        viewModel.toggleConnection(context, onPermissionRequired)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Connection Status Text
-                val statusText = when (uiState.vpnState) {
-                    is VpnState.Connected -> "متصل هستی"
-                    is VpnState.Connecting -> "در حال اتصال…"
-                    is VpnState.Disconnected -> "اتصال برقرار نیست"
-                    is VpnState.Error -> (uiState.vpnState as VpnState.Error).message
-                }
-
-                val statusColor = when (uiState.vpnState) {
-                    is VpnState.Connected -> AccentGreen
-                    is VpnState.Connecting -> AccentAmber
-                    is VpnState.Disconnected -> TextMuted
-                    is VpnState.Error -> AccentRed
-                }
-
-                Text(
-                    text = statusText,
-                    color = statusColor,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Selector Pills: Route (مسیر اتصال) & Location (لوکیشن / سرور)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    // 1. Route Selector Pill
-                    Box(
-                        modifier = Modifier
-                            .weight(1.15f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                            .clickable { viewModel.setRouteSheetVisible(true) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = null,
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = uiState.selectedRoute.title,
-                                    color = TextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = TextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
+                    // Animated Pulsing Connect Button
+                    PulsingConnectButton(
+                        vpnState = uiState.vpnState,
+                        onClick = {
+                            viewModel.toggleConnection(context, onPermissionRequired)
                         }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Connection Status Text
+                    val statusText = when (uiState.vpnState) {
+                        is VpnState.Connected -> "متصل هستی"
+                        is VpnState.Connecting -> "در حال اتصال…"
+                        is VpnState.Disconnected -> "اتصال برقرار نیست"
+                        is VpnState.Error -> (uiState.vpnState as VpnState.Error).message
                     }
 
-                    // 2. Location Selector Pill
-                    Box(
-                        modifier = Modifier
-                            .weight(0.85f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                            .clickable { viewModel.setLocationSheetVisible(true) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = uiState.selectedLocation.flagEmoji,
-                                    fontSize = 15.sp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = uiState.selectedLocation.countryName,
-                                    color = TextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = TextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                    val statusColor = when (uiState.vpnState) {
+                        is VpnState.Connected -> AccentGreen
+                        is VpnState.Connecting -> AccentAmber
+                        is VpnState.Disconnected -> TextLightSecondary
+                        is VpnState.Error -> AccentRed
                     }
-                }
 
-                // 3. Technical Connection Details Badge & Real-time Metrics Card (When Connected)
-                AnimatedVisibility(
-                    visible = uiState.vpnState is VpnState.Connected,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    val connectedState = uiState.vpnState as? VpnState.Connected
-                    if (connectedState != null) {
-                        val details = connectedState.details
-                        Column(
+                    Text(
+                        text = statusText,
+                        color = statusColor,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Selector Pills: Route (مسیر اتصال) & Location (لوکیشن / سرور)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // 1. Route Selector Pill
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceDark)
-                                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                                .padding(12.dp)
+                                .weight(1.15f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(HeroCardSurface)
+                                .border(1.dp, HeroCardBorder, RoundedCornerShape(14.dp))
+                                .clickable { viewModel.setRouteSheetVisible(true) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
                         ) {
-                            // Protocol & Inbound header row with Retest action
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(AccentGreen)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "${details.protocol}  •  ${details.inboundRemark}",
-                                        color = TextPrimary,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
                                 Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable(enabled = !details.isTesting) {
-                                            viewModel.retestMetrics(context)
-                                        }
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    if (details.isTesting) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(12.dp),
-                                            color = PrimaryBlue,
-                                            strokeWidth = 1.5.dp
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "سنجش مجدد",
-                                            tint = PrimaryBlue,
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (details.isTesting) "سنجش…" else "سنجش مجدد",
-                                        color = PrimaryBlue,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
+                                        text = uiState.selectedRoute.title,
+                                        color = TextLightPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = TextLightSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Metrics details row
+                        // 2. Location Selector Pill
+                        Box(
+                            modifier = Modifier
+                                .weight(0.85f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(HeroCardSurface)
+                                .border(1.dp, HeroCardBorder, RoundedCornerShape(14.dp))
+                                .clickable { viewModel.setLocationSheetVisible(true) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFF0F172A))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Real Delay
-                                Column(horizontalAlignment = Alignment.Start) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Text(
-                                        text = "تاخیر واقعی (Real Delay)",
-                                        color = TextMuted,
-                                        fontSize = 10.sp
+                                        text = uiState.selectedLocation.flagEmoji,
+                                        fontSize = 15.sp
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    val delayText = if (details.realDelayMs != null && details.realDelayMs > 0) {
-                                        "${PersianDigits.convert(details.realDelayMs)} ms"
-                                    } else if (details.isTesting) {
-                                        "…"
-                                    } else {
-                                        "نامشخص"
-                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = delayText,
-                                        color = if (details.realDelayMs != null && details.realDelayMs < 400) AccentGreen else AccentAmber,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
+                                        text = uiState.selectedLocation.countryName,
+                                        color = TextLightPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = TextLightSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
 
-                                // Raw TCP Ping
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "پینگ سرور (Ping)",
-                                        color = TextMuted,
-                                        fontSize = 10.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    val pingText = if (details.pingMs != null && details.pingMs > 0) {
-                                        "${PersianDigits.convert(details.pingMs)} ms"
-                                    } else if (details.isTesting) {
-                                        "…"
-                                    } else {
-                                        "نامشخص"
+                    // 3. Technical Connection Details Badge & Real-time Metrics Card (When Connected)
+                    AnimatedVisibility(
+                        visible = uiState.vpnState is VpnState.Connected,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        val connectedState = uiState.vpnState as? VpnState.Connected
+                        if (connectedState != null) {
+                            val details = connectedState.details
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(HeroCardSurface)
+                                    .border(1.dp, HeroCardBorder, RoundedCornerShape(16.dp))
+                                    .padding(12.dp)
+                            ) {
+                                // Protocol & Inbound header row with Retest action
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(AccentGreen)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "${details.protocol}  •  ${details.inboundRemark}",
+                                            color = TextLightPrimary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
-                                    Text(
-                                        text = pingText,
-                                        color = if (details.pingMs != null && details.pingMs < 300) AccentGreen else AccentAmber,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable(enabled = !details.isTesting) {
+                                                viewModel.retestMetrics(context)
+                                            }
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (details.isTesting) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(12.dp),
+                                                color = PrimaryBlue,
+                                                strokeWidth = 1.5.dp
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "سنجش مجدد",
+                                                tint = PrimaryBlue,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (details.isTesting) "سنجش…" else "سنجش مجدد",
+                                            color = PrimaryBlue,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
 
-                                // Server Host
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = "سرور مقصد",
-                                        color = TextMuted,
-                                        fontSize = 10.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = details.serverAddress.ifBlank { "–" },
-                                        color = TextSecondary,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Metrics details row
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color(0xFF141620))
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Real Delay
+                                    Column(horizontalAlignment = Alignment.Start) {
+                                        Text(
+                                            text = "تاخیر واقعی (Real Delay)",
+                                            color = TextLightSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        val delayText = if (details.realDelayMs != null && details.realDelayMs > 0) {
+                                            "${PersianDigits.convert(details.realDelayMs)} ms"
+                                        } else if (details.isTesting) {
+                                            "…"
+                                        } else {
+                                            "نامشخص"
+                                        }
+                                        Text(
+                                            text = delayText,
+                                            color = if (details.realDelayMs != null && details.realDelayMs < 400) AccentGreen else AccentAmber,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    // Raw TCP Ping
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "پینگ سرور (Ping)",
+                                            color = TextLightSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        val pingText = if (details.pingMs != null && details.pingMs > 0) {
+                                            "${PersianDigits.convert(details.pingMs)} ms"
+                                        } else if (details.isTesting) {
+                                            "…"
+                                        } else {
+                                            "نامشخص"
+                                        }
+                                        Text(
+                                            text = pingText,
+                                            color = if (details.pingMs != null && details.pingMs < 300) AccentGreen else AccentAmber,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    // Server Host
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "سرور مقصد",
+                                            color = TextLightSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = details.serverAddress.ifBlank { "–" },
+                                            color = TextLightPrimary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -713,7 +728,7 @@ fun DashboardScreen(
                     modifier = Modifier
                         .shadow(12.dp, RoundedCornerShape(50))
                         .clip(RoundedCornerShape(50))
-                        .background(SurfaceDark.copy(alpha = 0.96f))
+                        .background(HeroCardDark.copy(alpha = 0.96f))
                         .border(1.dp, AccentGreen.copy(alpha = 0.45f), RoundedCornerShape(50))
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -728,7 +743,7 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = msg,
-                        color = TextPrimary,
+                        color = TextLightPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )

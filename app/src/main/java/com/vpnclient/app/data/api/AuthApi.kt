@@ -2,12 +2,16 @@ package com.vpnclient.app.data.api
 
 import com.vpnclient.app.data.api.models.CouponValidateRequest
 import com.vpnclient.app.data.api.models.CouponValidateResponse
+import com.vpnclient.app.data.api.models.ForgotPasswordRequest
+import com.vpnclient.app.data.api.models.ForgotPasswordResponse
 import com.vpnclient.app.data.api.models.LoginRequest
 import com.vpnclient.app.data.api.models.OrderRenewRequest
 import com.vpnclient.app.data.api.models.OrderRenewResponse
 import com.vpnclient.app.data.api.models.OrderStatusResponse
 import com.vpnclient.app.data.api.models.RegisterRequest
 import com.vpnclient.app.data.api.models.RegisterResponse
+import com.vpnclient.app.data.api.models.ResetPasswordRequest
+import com.vpnclient.app.data.api.models.ResetPasswordResponse
 import com.vpnclient.app.data.api.models.RenewInfoResponse
 import com.vpnclient.app.data.api.models.RenewalRequest
 import com.vpnclient.app.data.api.models.RenewalResponse
@@ -27,6 +31,12 @@ interface AuthApi {
 
     @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<ForgotPasswordResponse>
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ResetPasswordResponse>
 
     @POST("api/coupon/validate")
     suspend fun validateCoupon(@Body request: CouponValidateRequest): Response<CouponValidateResponse>

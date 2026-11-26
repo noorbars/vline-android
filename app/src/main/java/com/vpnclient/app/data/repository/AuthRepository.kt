@@ -2,9 +2,13 @@ package com.vpnclient.app.data.repository
 
 import com.google.gson.Gson
 import com.vpnclient.app.data.api.ApiClient
+import com.vpnclient.app.data.api.models.ForgotPasswordRequest
+import com.vpnclient.app.data.api.models.ForgotPasswordResponse
 import com.vpnclient.app.data.api.models.LoginRequest
 import com.vpnclient.app.data.api.models.RegisterRequest
 import com.vpnclient.app.data.api.models.RegisterResponse
+import com.vpnclient.app.data.api.models.ResetPasswordRequest
+import com.vpnclient.app.data.api.models.ResetPasswordResponse
 import com.vpnclient.app.data.api.models.UserProfile
 import com.vpnclient.app.data.api.models.WorkerLoginResponse
 import com.vpnclient.app.data.local.PreferenceManager
@@ -94,6 +98,67 @@ class AuthRepository(private val preferenceManager: PreferenceManager) {
                         null
                     }
                     val msg = parsedErr ?: "خطا در ثبت‌نام (کد ${response.code()})"
+                    Result.failure(Exception(msg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun forgotPassword(email: String): Result<ForgotPasswordResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanEmail = email.trim()
+                val api = ApiClient.getService(preferenceManager)
+                val response = api.forgotPassword(ForgotPasswordRequest(cleanEmail))
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    if (body.success) {
+                        Result.success(body)
+                    } else {
+                        Result.failure(Exception(body.error ?: "خطا در ارسال کد بازیابی"))
+                    }
+                } else {
+                    val errBody = response.errorBody()?.string()
+                    val parsedErr = try {
+                        gson.fromJson(errBody, ForgotPasswordResponse::class.java)?.error
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val msg = parsedErr ?: "خطا در بازیابی رمز عبور (کد ${response.code()})"
+                    Result.failure(Exception(msg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun resetPassword(email: String, code: String, newPassword: String): Result<ResetPasswordResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanEmail = email.trim()
+                val cleanCode = code.trim()
+                val cleanPass = newPassword.trim()
+                val api = ApiClient.getService(preferenceManager)
+                val response = api.resetPassword(ResetPasswordRequest(cleanEmail, cleanCode, cleanPass))
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    if (body.success) {
+                        preferenceManager.password = cleanPass
+                        Result.success(body)
+                    } else {
+                        Result.failure(Exception(body.error ?: "خطا در تغییر رمز عبور"))
+                    }
+                } else {
+                    val errBody = response.errorBody()?.string()
+                    val parsedErr = try {
+                        gson.fromJson(errBody, ResetPasswordResponse::class.java)?.error
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val msg = parsedErr ?: "کد تایید نامعتبر یا منقضی است (کد ${response.code()})"
                     Result.failure(Exception(msg))
                 }
             } catch (e: Exception) {

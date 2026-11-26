@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -28,8 +29,9 @@ import androidx.compose.ui.unit.dp
 import com.vpnclient.app.ui.theme.AccentAmber
 import com.vpnclient.app.ui.theme.AccentGreen
 import com.vpnclient.app.ui.theme.AccentGreenGlow
-import com.vpnclient.app.ui.theme.CardBorder
-import com.vpnclient.app.ui.theme.SurfaceDark
+import com.vpnclient.app.ui.theme.HeroCardBorder
+import com.vpnclient.app.ui.theme.HeroCardSurface
+import com.vpnclient.app.ui.theme.RingCoral
 import com.vpnclient.app.vpn.service.VpnState
 
 @Composable
@@ -56,7 +58,7 @@ fun PulsingConnectButton(
     val mainColor = when {
         isConnected -> AccentGreen
         isConnecting -> AccentAmber
-        else -> CardBorder
+        else -> HeroCardBorder
     }
 
     val glowColor = when {
@@ -80,12 +82,13 @@ fun PulsingConnectButton(
             )
         }
 
-        // Inner main button
+        // Inner main button (Deep obsidian with subtle border matching hero card in image)
         Box(
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape)
-                .background(SurfaceDark)
+                .background(HeroCardSurface)
+                .border(2.dp, if (isConnected) AccentGreen else if (isConnecting) AccentAmber else HeroCardBorder, CircleShape)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -112,7 +115,7 @@ fun PulsingConnectButton(
                 imageVector = Icons.Default.PowerSettingsNew,
                 contentDescription = "اتصال",
                 tint = if (isConnected) AccentGreen else if (isConnecting) AccentAmber else Color.White,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(54.dp)
             )
         }
     }

@@ -36,6 +36,28 @@ data class UserProfile(
     val daysRemaining: Long
         get() = remainingDays
 
+    val trafficPercentRemaining: Int
+        get() = if (trafficLimitBytes > 0L) {
+            val rem = remainingBytes
+            if (rem > 0L) {
+                ((rem.toDouble() / trafficLimitBytes) * 100).toInt().coerceIn(0, 100)
+            } else 0
+        } else {
+            100
+        }
+
+    val daysPercentRemaining: Int
+        get() {
+            if (remainingDays <= 0L) return 0
+            val base = when {
+                remainingDays > 180 -> 365
+                remainingDays > 90 -> 180
+                remainingDays > 30 -> 90
+                else -> 30
+            }
+            return ((remainingDays.toDouble() / base) * 100).toInt().coerceIn(0, 100)
+        }
+
     fun formattedRemainingTraffic(): String {
         val bytes = remainingBytes
         if (bytes < 0L) return "نامحدود"

@@ -18,12 +18,82 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    fun setRegisterMode(isRegister: Boolean) {
+        _uiState.update {
+            it.copy(
+                isRegisterMode = isRegister,
+                errorMessage = null,
+                confirmPassword = ""
+            )
+        }
+    }
+
     fun onUsernameChanged(username: String) {
         _uiState.update { it.copy(username = username, errorMessage = null) }
     }
 
     fun onPasswordChanged(password: String) {
         _uiState.update { it.copy(password = password, errorMessage = null) }
+    }
+
+    fun onConfirmPasswordChanged(confirmPassword: String) {
+        _uiState.update { it.copy(confirmPassword = confirmPassword, errorMessage = null) }
+    }
+
+    fun submit() {
+        if (_uiState.value.isRegisterMode) {
+            register()
+        } else {
+            login()
+        }
+    }
+
+    fun register() {
+        val email = _uiState.value.username.trim()
+        val password = _uiState.value.password.trim()
+        val confirm = _uiState.value.confirmPassword.trim()
+
+        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.update { it.copy(errorMessage = "لطفاً یک آدرس ایمیل معتبر وارد کنید") }
+            return
+        }
+        if (password.length < 6) {
+            _uiState.update { it.copy(errorMessage = "رمز عبور باید حداقل ۶ کاراکتر باشد") }
+            return
+        }
+        if (password != confirm) {
+            _uiState.update { it.copy(errorMessage = "رمز عبور و تکرار آن یکسان نیستند") }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            val result = authRepository.register(email, password)
+            result.fold(
+                onSuccess = { response ->
+                    val subUrl = response.data?.subUrl
+                    if (!subUrl.isNullOrBlank()) {
+                        subscriptionRepository.fetchFromSubUrl(subUrl)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoginSuccessful = true,
+                            errorMessage = null
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.localizedMessage ?: "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید."
+                        )
+                    }
+                }
+            )
+        }
     }
 
     fun login() {

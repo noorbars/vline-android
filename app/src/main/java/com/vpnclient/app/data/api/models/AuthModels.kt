@@ -7,6 +7,18 @@ data class LoginRequest(
     @SerializedName("password") val password: String
 )
 
+data class RegisterRequest(
+    @SerializedName("email") val email: String,
+    @SerializedName("password") val password: String
+)
+
+data class RegisterResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("data") val data: WorkerSubscriptionData? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("error") val error: String? = null
+)
+
 data class WorkerLoginResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("data") val data: WorkerSubscriptionData?,
@@ -92,7 +104,27 @@ data class OrderRenewRequest(
     @SerializedName("payment_method") val paymentMethod: String, // "wallet" or "card"
     @SerializedName("tracking_code") val trackingCode: String? = null,
     @SerializedName("receipt_base64") val receiptBase64: String? = null,
-    @SerializedName("note") val note: String? = null
+    @SerializedName("note") val note: String? = null,
+    @SerializedName("coupon_code") val couponCode: String? = null
+)
+
+data class CouponValidateRequest(
+    @SerializedName("code") val code: String,
+    @SerializedName("plan_id") val planId: String,
+    @SerializedName("username") val username: String? = null
+)
+
+data class CouponValidateResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("data") val data: CouponData? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class CouponData(
+    @SerializedName("code") val code: String,
+    @SerializedName("discount_amount") val discountAmount: Long,
+    @SerializedName("final_price") val finalPrice: Long,
+    @SerializedName("message") val message: String? = null
 )
 
 data class OrderRenewResponse(

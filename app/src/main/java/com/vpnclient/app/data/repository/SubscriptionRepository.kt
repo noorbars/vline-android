@@ -183,7 +183,8 @@ class SubscriptionRepository(
         paymentMethod: String, // "wallet" or "card"
         trackingCode: String? = null,
         receiptBase64: String? = null,
-        note: String? = null
+        note: String? = null,
+        couponCode: String? = null
     ): Result<com.vpnclient.app.data.api.models.OrderRenewResponse> = withContext(Dispatchers.IO) {
         try {
             val username = preferenceManager.username ?: ""
@@ -194,7 +195,8 @@ class SubscriptionRepository(
                 paymentMethod = paymentMethod,
                 trackingCode = trackingCode,
                 receiptBase64 = receiptBase64,
-                note = note
+                note = note,
+                couponCode = couponCode
             )
             val response = api.submitOrderRenew(request)
             if (response.isSuccessful && response.body() != null) {
@@ -206,6 +208,44 @@ class SubscriptionRepository(
                 }
             } else {
                 Result.failure(Exception("خطا در ارسال سفارش به سرور (کد ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun validateCoupon(
+        code: String,
+        planId: String
+    ): Result<com.vpnclient.app.data.api.models.CouponData> = withContext(Dispatchers.IO) {
+        try {
+            val username = preferenceManager.username
+            val api = ApiClient.getService(preferenceManager)
+            val response = api.validateCoupon(
+                com.vpnclient.app.data.api.models.CouponValidateRequest(
+                    code = code.trim(),
+                    planId = planId,
+                    username = username
+                )
+            )
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.data != null) {
+                    Result.success(body.data)
+                } else {
+                    Result.failure(Exception(body.error ?: "کد تخفیف نامعتبر است"))
+                }
+            } else {
+                val errBody = response.errorBody()?.string()
+                val parsedErr = try {
+                    com.google.gson.Gson().fromJson(
+                        errBody,
+                        com.vpnclient.app.data.api.models.CouponValidateResponse::class.java
+                    )?.error
+                } catch (e: Exception) {
+                    null
+                }
+                Result.failure(Exception(parsedErr ?: "کد تخفیف نامعتبر یا منقضی است (کد ${response.code()})"))
             }
         } catch (e: Exception) {
             Result.failure(e)

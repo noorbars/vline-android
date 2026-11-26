@@ -42,10 +42,12 @@ import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
@@ -78,6 +80,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vpnclient.app.data.api.models.RenewalPlanDto
@@ -110,7 +113,10 @@ fun RenewalBottomSheet(
     onDismiss: () -> Unit,
     onRefreshInfo: () -> Unit,
     onSubmitOrder: (planId: String, planTitle: String, paymentMethod: String, trackingCode: String?, receiptBase64: String?, note: String?) -> Unit,
-    onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit
+    onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
+    onCouponCodeChanged: (String) -> Unit = {},
+    onValidateCoupon: (String) -> Unit = {},
+    onClearCoupon: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -125,7 +131,10 @@ fun RenewalBottomSheet(
             onDismiss = onDismiss,
             onRefreshInfo = onRefreshInfo,
             onSubmitOrder = onSubmitOrder,
-            onCheckStatus = onCheckStatus
+            onCheckStatus = onCheckStatus,
+            onCouponCodeChanged = onCouponCodeChanged,
+            onValidateCoupon = onValidateCoupon,
+            onClearCoupon = onClearCoupon
         )
     }
 }
@@ -136,7 +145,10 @@ fun RenewScreenContent(
     onDismiss: () -> Unit,
     onRefreshInfo: () -> Unit,
     onSubmitOrder: (planId: String, planTitle: String, paymentMethod: String, trackingCode: String?, receiptBase64: String?, note: String?) -> Unit,
-    onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit
+    onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
+    onCouponCodeChanged: (String) -> Unit = {},
+    onValidateCoupon: (String) -> Unit = {},
+    onClearCoupon: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val decimalFormatter = remember { DecimalFormat("#,###") }
@@ -584,14 +596,15 @@ fun RenewScreenContent(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
+                                val isFirstPurchase = (uiState.userProfile?.expireTimestamp ?: 0L) == 0L
                                 Text(
-                                    text = "تمدید اشتراک سرویس",
+                                    text = if (isFirstPurchase) "خرید اشتراک سرویس" else "تمدید اشتراک سرویس",
                                     color = TextPrimary,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "نام کاربری: ${uiState.username.ifBlank { "کاربر وی‌لاین" }}",
+                                    text = "حساب کاربری: ${uiState.username.ifBlank { "کاربر وی‌لاین" }}",
                                     color = TextMuted,
                                     fontSize = 12.sp
                                 )
@@ -692,7 +705,14 @@ fun RenewScreenContent(
                                         color = if (isSelected) PrimaryBlue else CardBorder,
                                         shape = RoundedCornerShape(14.dp)
                                     )
-                                    .clickable { selectedPlan = plan }
+                                    .clickable {
+                                        if (selectedPlan.id != plan.id) {
+                                            selectedPlan = plan
+                                            if (uiState.appliedCoupon != null) {
+                                                onClearCoupon()
+                                            }
+                                        }
+                                    }
                                     .padding(horizontal = 14.dp, vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -747,11 +767,122 @@ fun RenewScreenContent(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // --- COUPON / DISCOUNT CODE SECTION ---
+                        val appliedCoupon = uiState.appliedCoupon
+                        val finalPrice = appliedCoupon?.finalPrice ?: selectedPlan.price
+
+                        if (appliedCoupon != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(AccentGreen.copy(alpha = 0.12f))
+                                    .border(1.dp, AccentGreen.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalOffer,
+                                        contentDescription = null,
+                                        tint = AccentGreen,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = "کد تخفیف ${appliedCoupon.code} اعمال شد",
+                                            color = AccentGreen,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "تخفیف: ${PersianDigits.convert(decimalFormatter.format(appliedCoupon.discountAmount))} تومان",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = onClearCoupon,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "حذف کد",
+                                        tint = TextMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = uiState.couponCodeInput,
+                                    onValueChange = onCouponCodeChanged,
+                                    label = { Text("کد تخفیف (اختیاری)", fontSize = 12.sp) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.LocalOffer,
+                                            contentDescription = null,
+                                            tint = TextMuted,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PrimaryBlue,
+                                        unfocusedBorderColor = CardBorder,
+                                        focusedTextColor = TextPrimary,
+                                        unfocusedTextColor = TextPrimary,
+                                        focusedLabelColor = PrimaryBlue,
+                                        unfocusedLabelColor = TextMuted
+                                    )
+                                )
+
+                                Button(
+                                    onClick = { onValidateCoupon(selectedPlan.id) },
+                                    enabled = !uiState.isValidatingCoupon && uiState.couponCodeInput.isNotBlank(),
+                                    modifier = Modifier.height(52.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                ) {
+                                    if (uiState.isValidatingCoupon) {
+                                        CircularProgressIndicator(
+                                            color = Color.White,
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    } else {
+                                        Text("اعمال", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                            if (!uiState.couponError.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = uiState.couponError,
+                                    color = AccentRed,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // --- WALLET INSTANT PAYMENT OPTION (IF BALANCE SUFFICIENT) ---
                         val currentWallet = renewData?.walletBalance ?: 0L
-                        if (currentWallet >= selectedPlan.price) {
+                        if (currentWallet >= finalPrice) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -795,7 +926,7 @@ fun RenewScreenContent(
                                     Spacer(modifier = Modifier.height(10.dp))
 
                                     Text(
-                                        text = "بدون نیاز به واریز کارت و ارسال فیش، مبلغ این پلن (${PersianDigits.convert(decimalFormatter.format(selectedPlan.price))} تومان) از موجودی کیف پول شما کسر و سرویس فوراً تمدید می‌شود.",
+                                        text = "بدون نیاز به واریز کارت و ارسال فیش، مبلغ این پلن (${PersianDigits.convert(decimalFormatter.format(finalPrice))} تومان) از موجودی کیف پول شما کسر و سرویس فوراً فعال می‌شود.",
                                         color = TextSecondary,
                                         fontSize = 11.sp,
                                         lineHeight = 18.sp
@@ -820,7 +951,7 @@ fun RenewScreenContent(
                                             Icon(imageVector = Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "تمدید آنی با کیف پول (${PersianDigits.convert(decimalFormatter.format(selectedPlan.price))} تومان)",
+                                                text = "پرداخت آنی با کیف پول (${PersianDigits.convert(decimalFormatter.format(finalPrice))} تومان)",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
@@ -936,8 +1067,19 @@ fun RenewScreenContent(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
+                                if (appliedCoupon != null) {
+                                    Text(
+                                        text = "مبلغ اصلی: ${PersianDigits.convert(decimalFormatter.format(selectedPlan.price))} تومان",
+                                        color = TextMuted,
+                                        fontSize = 11.sp,
+                                        textDecoration = TextDecoration.LineThrough,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
                                 Text(
-                                    text = "مبلغ قابل پرداخت: ${PersianDigits.convert(decimalFormatter.format(selectedPlan.price))} تومان",
+                                    text = "مبلغ قابل پرداخت: ${PersianDigits.convert(decimalFormatter.format(finalPrice))} تومان",
                                     color = PrimaryBlue,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,

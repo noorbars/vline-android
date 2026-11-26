@@ -1,9 +1,13 @@
 package com.vpnclient.app.data.api
 
+import com.vpnclient.app.data.api.models.CouponValidateRequest
+import com.vpnclient.app.data.api.models.CouponValidateResponse
 import com.vpnclient.app.data.api.models.LoginRequest
 import com.vpnclient.app.data.api.models.OrderRenewRequest
 import com.vpnclient.app.data.api.models.OrderRenewResponse
 import com.vpnclient.app.data.api.models.OrderStatusResponse
+import com.vpnclient.app.data.api.models.RegisterRequest
+import com.vpnclient.app.data.api.models.RegisterResponse
 import com.vpnclient.app.data.api.models.RenewInfoResponse
 import com.vpnclient.app.data.api.models.RenewalRequest
 import com.vpnclient.app.data.api.models.RenewalResponse
@@ -20,6 +24,12 @@ interface AuthApi {
 
     @POST("api/login")
     suspend fun login(@Body request: LoginRequest): Response<WorkerLoginResponse>
+
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
+
+    @POST("api/coupon/validate")
+    suspend fun validateCoupon(@Body request: CouponValidateRequest): Response<CouponValidateResponse>
 
     @POST("api/renewal")
     suspend fun submitRenewal(@Body request: RenewalRequest): Response<RenewalResponse>

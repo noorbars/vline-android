@@ -3,6 +3,8 @@ package com.vpnclient.app.ui.dashboard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
@@ -46,12 +49,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.vpnclient.app.ui.components.PersianDigits
 import com.vpnclient.app.ui.components.PulsingConnectButton
 import com.vpnclient.app.ui.components.TrafficCard
@@ -470,22 +475,6 @@ fun DashboardScreen(
                     .padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Dynamic feedback toast/banner if available
-                AnimatedVisibility(
-                    visible = uiState.infoMessage != null,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    uiState.infoMessage?.let { msg ->
-                        Text(
-                            text = msg,
-                            color = AccentGreen,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(bottom = 10.dp)
-                        )
-                    }
-                }
-
                 // 1. Domestic / Half-Price Internet Card (اینترنت نیم‌بها و سایت‌های داخلی)
                 Row(
                     modifier = Modifier
@@ -572,7 +561,9 @@ fun DashboardScreen(
                     else -> PrimaryBlue.copy(alpha = 0.12f)
                 }
 
+                val hasSubscription = (uiState.userProfile?.expireTimestamp ?: 0L) > 0L
                 val renewBtnText = when {
+                    !hasSubscription -> "خرید اشتراک"
                     isSubExpired -> "اشتراک شما منقضی شده است — لمس برای تمدید آنی"
                     isNearExpiry -> "اعتبار اشتراک رو به اتمام است (${PersianDigits.convert(daysRem ?: 0L)} روز باقی‌مانده) — تمدید"
                     else -> "تمدید اشتراک"
@@ -691,7 +682,10 @@ fun DashboardScreen(
                 },
                 onCheckStatus = { orderId, orderNumber ->
                     viewModel.checkOrderStatus(orderId, orderNumber)
-                }
+                },
+                onCouponCodeChanged = { viewModel.onCouponCodeChanged(it) },
+                onValidateCoupon = { planId -> viewModel.validateCoupon(planId) },
+                onClearCoupon = { viewModel.clearCoupon() }
             )
         }
 
@@ -701,6 +695,44 @@ fun DashboardScreen(
                 username = uiState.username,
                 onDismiss = { viewModel.setSupportSheetVisible(false) }
             )
+        }
+
+        // Floating Cloud Toast Overlay (ابر پیام موقت)
+        AnimatedVisibility(
+            visible = uiState.infoMessage != null,
+            enter = fadeIn() + slideInVertically { -it },
+            exit = fadeOut() + slideOutVertically { -it },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 64.dp, start = 16.dp, end = 16.dp)
+                .zIndex(10f)
+        ) {
+            uiState.infoMessage?.let { msg ->
+                Row(
+                    modifier = Modifier
+                        .shadow(12.dp, RoundedCornerShape(50))
+                        .clip(RoundedCornerShape(50))
+                        .background(SurfaceDark.copy(alpha = 0.96f))
+                        .border(1.dp, AccentGreen.copy(alpha = 0.45f), RoundedCornerShape(50))
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = AccentGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = msg,
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
     }
 }

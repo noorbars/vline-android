@@ -1,9 +1,13 @@
 package com.vpnclient.app.ui.login
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VpnKey
@@ -82,14 +89,16 @@ fun LoginScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // App Icon Circle
             Box(
                 modifier = Modifier
-                    .size(76.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
                     .background(SurfaceDark),
                 contentAlignment = Alignment.Center
@@ -98,38 +107,87 @@ fun LoginScreen(
                     imageVector = Icons.Default.VpnKey,
                     contentDescription = null,
                     tint = PrimaryBlue,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(36.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "ورود به حساب کاربری",
+                text = if (uiState.isRegisterMode) "ساخت حساب کاربری" else "ورود به حساب کاربری",
                 color = TextPrimary,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "نام کاربری و رمز عبور اشتراک خود را وارد کنید",
+                text = if (uiState.isRegisterMode)
+                    "ایمیل و رمز عبور دلخواه خود را وارد کنید"
+                else
+                    "ایمیل یا نام کاربری و رمز عبور خود را وارد کنید",
                 color = TextSecondary,
                 fontSize = 13.sp
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Username Input
+            // Login / Register Mode Toggle Pill
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(SurfaceDark)
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                    .padding(4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (!uiState.isRegisterMode) PrimaryBlue else Color.Transparent)
+                        .clickable { viewModel.setRegisterMode(false) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "ورود",
+                        color = if (!uiState.isRegisterMode) Color.White else TextSecondary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (uiState.isRegisterMode) PrimaryBlue else Color.Transparent)
+                        .clickable { viewModel.setRegisterMode(true) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "ثبت‌نام",
+                        color = if (uiState.isRegisterMode) Color.White else TextSecondary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // Username / Email Input
             OutlinedTextField(
                 value = uiState.username,
                 onValueChange = viewModel::onUsernameChanged,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("نام کاربری") },
+                label = { Text(if (uiState.isRegisterMode) "ایمیل (نام کاربری شما)" else "ایمیل یا نام کاربری") },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        imageVector = if (uiState.isRegisterMode) Icons.Default.Email else Icons.Default.Person,
                         contentDescription = null,
                         tint = TextMuted
                     )
@@ -147,12 +205,12 @@ fun LoginScreen(
                     unfocusedLabelColor = TextMuted
                 ),
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Password Input
             OutlinedTextField(
@@ -191,15 +249,60 @@ fun LoginScreen(
                 ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
+                    imeAction = if (uiState.isRegisterMode) ImeAction.Next else ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        focusManager.clearFocus()
-                        viewModel.login()
+                        if (!uiState.isRegisterMode) {
+                            focusManager.clearFocus()
+                            viewModel.submit()
+                        }
                     }
                 )
             )
+
+            // Confirm Password Input (Register Mode only)
+            AnimatedVisibility(visible = uiState.isRegisterMode) {
+                Column {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    OutlinedTextField(
+                        value = uiState.confirmPassword,
+                        onValueChange = viewModel::onConfirmPasswordChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("تکرار رمز عبور") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = TextMuted
+                            )
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = CardBorder,
+                            focusedContainerColor = SurfaceDark,
+                            unfocusedContainerColor = SurfaceDark,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedLabelColor = PrimaryBlue,
+                            unfocusedLabelColor = TextMuted
+                        ),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                viewModel.submit()
+                            }
+                        )
+                    )
+                }
+            }
 
             // Error display
             if (uiState.errorMessage != null) {
@@ -211,13 +314,13 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Sign In Button
+            // Submit Button
             Button(
                 onClick = {
                     focusManager.clearFocus()
-                    viewModel.login()
+                    viewModel.submit()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -234,7 +337,7 @@ fun LoginScreen(
                     )
                 } else {
                     Text(
-                        text = "ورود و دریافت تنظیمات",
+                        text = if (uiState.isRegisterMode) "ثبت‌نام و ورود به حساب" else "ورود و دریافت تنظیمات",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White

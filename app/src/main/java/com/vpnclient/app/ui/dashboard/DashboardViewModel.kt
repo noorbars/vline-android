@@ -13,6 +13,8 @@ import com.vpnclient.app.data.updater.UpdateManager
 import com.vpnclient.app.vpn.core.RouteCategory
 import com.vpnclient.app.vpn.service.VpnState
 import com.vpnclient.app.vpn.service.XrayVpnService
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,17 @@ class DashboardViewModel(
     )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private var toastJob: Job? = null
+
+    fun showToast(message: String, durationMs: Long = 3000L) {
+        toastJob?.cancel()
+        _uiState.update { it.copy(infoMessage = message) }
+        toastJob = viewModelScope.launch {
+            delay(durationMs)
+            _uiState.update { it.copy(infoMessage = null) }
+        }
+    }
+
     init {
         // Collect real-time VPN service state
         viewModelScope.launch {
@@ -51,15 +64,17 @@ class DashboardViewModel(
 
     fun refreshData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, infoMessage = null) }
+            _uiState.update { it.copy(isRefreshing = true) }
             val result = subscriptionRepository.refreshSubscription()
             val updatedProfile = subscriptionRepository.getCachedProfile()
             _uiState.update {
                 it.copy(
                     isRefreshing = false,
-                    userProfile = updatedProfile,
-                    infoMessage = if (result.isSuccess) "پیکربندی با موفقیت بروزرسانی شد" else null
+                    userProfile = updatedProfile
                 )
+            }
+            if (result.isSuccess) {
+                showToast("پیکربندی با موفقیت به روز رسانی شد")
             }
         }
     }
@@ -69,11 +84,9 @@ class DashboardViewModel(
         val updated = !current
         preferenceManager.isIranBypassEnabled = updated
         _uiState.update {
-            it.copy(
-                isIranBypassEnabled = updated,
-                infoMessage = if (updated) "اینترنت نیم‌بها برای سایت‌های داخلی فعال شد" else "حالت ترافیک تمام بین‌الملل فعال شد"
-            )
+            it.copy(isIranBypassEnabled = updated)
         }
+        showToast(if (updated) "اینترنت نیم‌بها برای سایت‌های داخلی فعال شد" else "حالت ترافیک تمام بین‌الملل فعال شد")
 
         // If currently connected, reload config to apply routing rules immediately
         if (_uiState.value.vpnState is VpnState.Connected) {
@@ -89,10 +102,10 @@ class DashboardViewModel(
         _uiState.update {
             it.copy(
                 selectedRoute = category,
-                isRouteSheetVisible = false,
-                infoMessage = "مسیر فعال: ${category.title}"
+                isRouteSheetVisible = false
             )
         }
+        showToast("مسیر فعال: ${category.title}")
 
         // If currently connected or connecting, reload tunnel with new route
         val currentState = _uiState.value.vpnState
@@ -110,10 +123,10 @@ class DashboardViewModel(
         _uiState.update {
             it.copy(
                 selectedLocation = location,
-                isLocationSheetVisible = false,
-                infoMessage = "سرور انتخاب شده: ${location.countryName}"
+                isLocationSheetVisible = false
             )
         }
+        showToast("سرور انتخاب شده: ${location.countryName}")
     }
 
     fun setRouteSheetVisible(visible: Boolean) {
@@ -129,7 +142,7 @@ class DashboardViewModel(
             is VpnState.Disconnected, is VpnState.Error -> {
                 val config = subscriptionRepository.getCachedConfig()
                 if (config.isNullOrBlank()) {
-                    _uiState.update { it.copy(infoMessage = "پیکربندی دریافت نشده است. لطفاً بروزرسانی کنید.") }
+                    showToast("پیکربندی دریافت نشده است. لطفاً بروزرسانی کنید.")
                     return
                 }
                 val vpnIntent = android.net.VpnService.prepare(context)
@@ -245,11 +258,54 @@ class DashboardViewModel(
                 isSubmittingRenewal = false,
                 renewalSubmittedSuccess = false,
                 isWalletRenewSuccess = false,
-                renewalErrorMessage = null
+                renewalErrorMessage = null,
+                couponCodeInput = "",
+                appliedCoupon = null,
+                couponError = null
             )
         }
         if (visible) {
             loadRenewInfo()
+        }
+    }
+
+    fun onCouponCodeChanged(code: String) {
+        _uiState.update { it.copy(couponCodeInput = code, couponError = null) }
+    }
+
+    fun clearCoupon() {
+        _uiState.update { it.copy(couponCodeInput = "", appliedCoupon = null, couponError = null) }
+    }
+
+    fun validateCoupon(planId: String) {
+        val code = _uiState.value.couponCodeInput.trim()
+        if (code.isBlank()) {
+            _uiState.update { it.copy(couponError = "لطفاً کد تخفیف را وارد کنید") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isValidatingCoupon = true, couponError = null) }
+            val result = subscriptionRepository.validateCoupon(code, planId)
+            result.fold(
+                onSuccess = { couponData ->
+                    _uiState.update {
+                        it.copy(
+                            isValidatingCoupon = false,
+                            appliedCoupon = couponData,
+                            couponError = null
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(
+                            isValidatingCoupon = false,
+                            appliedCoupon = null,
+                            couponError = err.localizedMessage ?: "کد تخفیف نامعتبر است"
+                        )
+                    }
+                }
+            )
         }
     }
 
@@ -306,7 +362,8 @@ class DashboardViewModel(
                 paymentMethod = paymentMethod,
                 trackingCode = trackingCode,
                 receiptBase64 = receiptBase64,
-                note = note
+                note = note,
+                couponCode = _uiState.value.appliedCoupon?.code
             )
 
             if (result.isSuccess) {

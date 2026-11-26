@@ -3,6 +3,8 @@ package com.vpnclient.app.data.repository
 import com.google.gson.Gson
 import com.vpnclient.app.data.api.ApiClient
 import com.vpnclient.app.data.api.models.LoginRequest
+import com.vpnclient.app.data.api.models.RegisterRequest
+import com.vpnclient.app.data.api.models.RegisterResponse
 import com.vpnclient.app.data.api.models.UserProfile
 import com.vpnclient.app.data.api.models.WorkerLoginResponse
 import com.vpnclient.app.data.local.PreferenceManager
@@ -53,6 +55,45 @@ class AuthRepository(private val preferenceManager: PreferenceManager) {
                         null
                     }
                     val msg = parsedErr ?: "نام کاربری یا رمز عبور اشتباه است (کد ${response.code()})"
+                    Result.failure(Exception(msg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun register(email: String, password: String): Result<RegisterResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanEmail = email.trim()
+                val cleanPass = password.trim()
+                val api = ApiClient.getService(preferenceManager)
+                val response = api.register(RegisterRequest(cleanEmail, cleanPass))
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    if (body.success) {
+                        preferenceManager.username = cleanEmail
+                        preferenceManager.password = cleanPass
+                        preferenceManager.subUrl = body.data?.subUrl
+                        val expireTimestamp = parseExpireDate(body.data?.expireDate)
+                        preferenceManager.cachedUserProfile = UserProfile(
+                            username = cleanEmail,
+                            expireTimestamp = expireTimestamp
+                        )
+                        Result.success(body)
+                    } else {
+                        val errMsg = body.error ?: "خطا در ثبت‌نام"
+                        Result.failure(Exception(errMsg))
+                    }
+                } else {
+                    val errBody = response.errorBody()?.string()
+                    val parsedErr = try {
+                        gson.fromJson(errBody, RegisterResponse::class.java)?.error
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val msg = parsedErr ?: "خطا در ثبت‌نام (کد ${response.code()})"
                     Result.failure(Exception(msg))
                 }
             } catch (e: Exception) {

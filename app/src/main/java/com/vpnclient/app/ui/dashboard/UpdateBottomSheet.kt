@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,17 +41,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vpnclient.app.data.model.AppUpdateInfo
 import com.vpnclient.app.ui.components.PersianDigits
 import com.vpnclient.app.ui.theme.AccentGreen
 import com.vpnclient.app.ui.theme.AccentRed
+import com.vpnclient.app.ui.theme.BorderPurple
 import com.vpnclient.app.ui.theme.CardBorder
 import com.vpnclient.app.ui.theme.PrimaryBlue
+import com.vpnclient.app.ui.theme.PrimaryIndigo
+import com.vpnclient.app.ui.theme.SurfaceCardPurple
 import com.vpnclient.app.ui.theme.SurfaceDark
+import com.vpnclient.app.ui.theme.TextDarkPrimary
+import com.vpnclient.app.ui.theme.TextDarkSecondary
 import com.vpnclient.app.ui.theme.TextMuted
 import com.vpnclient.app.ui.theme.TextPrimary
 import com.vpnclient.app.ui.theme.TextSecondary
@@ -212,30 +222,41 @@ fun UpdateBottomSheet(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Changelog Box
+                    // Changelog Box (Lavender card with crisp high-contrast text and parsed markdown)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF0F172A))
-                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(SurfaceCardPurple)
+                            .border(1.dp, BorderPurple, RoundedCornerShape(16.dp))
                             .padding(14.dp)
                     ) {
-                        Text(
-                            text = "تغییرات این نسخه:",
-                            color = TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = updateInfo.releaseNotes.ifBlank { "بهبود عملکرد، ارتقای پایداری و رفع اشکالات جزئی" },
-                            color = TextPrimary,
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryIndigo)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "تغییرات این نسخه:",
+                                color = PrimaryIndigo,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        FormattedChangelog(
+                            notes = updateInfo.releaseNotes,
                             modifier = Modifier
-                                .height(90.dp)
-                                .verticalScroll(rememberScrollState())
+                                .fillMaxWidth()
+                                .heightIn(min = 60.dp, max = 150.dp)
                         )
                     }
 
@@ -254,7 +275,7 @@ fun UpdateBottomSheet(
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
                                 color = PrimaryBlue,
-                                trackColor = Color(0xFF0F172A),
+                                trackColor = Color(0xFFE2E8F0),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -360,6 +381,98 @@ fun UpdateBottomSheet(
                     ) {
                         Text(text = "متوجه شدم", color = Color.White, fontSize = 13.sp)
                     }
+                }
+            }
+        }
+    }
+}
+
+fun buildMarkdownAnnotatedString(text: String, defaultColor: Color): AnnotatedString {
+    return buildAnnotatedString {
+        val regex = Regex("(\\*\\*(.*?)\\*\\*)|(`(.*?)`)")
+        var lastIdx = 0
+        for (match in regex.findAll(text)) {
+            val range = match.range
+            if (range.first > lastIdx) {
+                withStyle(SpanStyle(color = defaultColor)) {
+                    append(text.substring(lastIdx, range.first))
+                }
+            }
+            if (match.value.startsWith("**")) {
+                val boldContent = match.groupValues[2]
+                withStyle(SpanStyle(color = defaultColor, fontWeight = FontWeight.Bold)) {
+                    append(boldContent)
+                }
+            } else if (match.value.startsWith("`")) {
+                val codeContent = match.groupValues[4]
+                withStyle(SpanStyle(color = PrimaryIndigo, fontWeight = FontWeight.SemiBold)) {
+                    append(codeContent)
+                }
+            }
+            lastIdx = range.last + 1
+        }
+        if (lastIdx < text.length) {
+            withStyle(SpanStyle(color = defaultColor)) {
+                append(text.substring(lastIdx))
+            }
+        }
+    }
+}
+
+@Composable
+fun FormattedChangelog(
+    notes: String,
+    modifier: Modifier = Modifier
+) {
+    val cleanNotes = notes.ifBlank { "بهبود عملکرد، ارتقای پایداری و رفع اشکالات جزئی" }
+    val lines = cleanNotes.lines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        for (line in lines) {
+            when {
+                line.startsWith("#") -> {
+                    val headerText = line.replace(Regex("^#+\\s*"), "").replace("**", "")
+                    Text(
+                        text = headerText,
+                        color = PrimaryIndigo,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                line.startsWith("-") || line.startsWith("*") -> {
+                    val rawBulletText = line.replace(Regex("^[-*]\\s*"), "")
+                    val annotated = buildMarkdownAnnotatedString(rawBulletText, TextDarkPrimary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "•",
+                            color = PrimaryIndigo,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                        Text(
+                            text = annotated,
+                            fontSize = 12.sp,
+                            lineHeight = 19.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                else -> {
+                    val annotated = buildMarkdownAnnotatedString(line, TextDarkSecondary)
+                    Text(
+                        text = annotated,
+                        fontSize = 12.sp,
+                        lineHeight = 19.sp
+                    )
                 }
             }
         }

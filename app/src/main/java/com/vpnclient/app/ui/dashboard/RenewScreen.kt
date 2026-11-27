@@ -114,6 +114,7 @@ fun RenewalBottomSheet(
     uiState: DashboardUiState,
     onDismiss: () -> Unit,
     onRefreshInfo: () -> Unit,
+    onResetOrderState: () -> Unit = {},
     onSubmitOrder: (planId: String, planTitle: String, paymentMethod: String, trackingCode: String?, receiptBase64: String?, note: String?) -> Unit,
     onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
     onCouponCodeChanged: (String) -> Unit = {},
@@ -133,6 +134,7 @@ fun RenewalBottomSheet(
             uiState = uiState,
             onDismiss = onDismiss,
             onRefreshInfo = onRefreshInfo,
+            onResetOrderState = onResetOrderState,
             onSubmitOrder = onSubmitOrder,
             onCheckStatus = onCheckStatus,
             onCouponCodeChanged = onCouponCodeChanged,
@@ -148,6 +150,7 @@ fun RenewScreenContent(
     uiState: DashboardUiState,
     onDismiss: () -> Unit,
     onRefreshInfo: () -> Unit,
+    onResetOrderState: () -> Unit = {},
     onSubmitOrder: (planId: String, planTitle: String, paymentMethod: String, trackingCode: String?, receiptBase64: String?, note: String?) -> Unit,
     onCheckStatus: (orderId: Long?, orderNumber: String?) -> Unit,
     onCouponCodeChanged: (String) -> Unit = {},
@@ -309,7 +312,10 @@ fun RenewScreenContent(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
-                            onClick = onDismiss,
+                            onClick = {
+                                onResetOrderState()
+                                onDismiss()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
@@ -384,7 +390,10 @@ fun RenewScreenContent(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
-                            onClick = onDismiss,
+                            onClick = {
+                                onResetOrderState()
+                                onDismiss()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
@@ -453,7 +462,7 @@ fun RenewScreenContent(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Button(
-                            onClick = onRefreshInfo,
+                            onClick = onResetOrderState,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),

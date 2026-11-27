@@ -692,6 +692,7 @@ fun DashboardScreen(
                 uiState = uiState,
                 onDismiss = { viewModel.setRenewalSheetVisible(false) },
                 onRefreshInfo = { viewModel.loadRenewInfo() },
+                onResetOrderState = { viewModel.resetOrderState() },
                 onSubmitOrder = { planId, planTitle, method, trackingCode, receiptBase64, note ->
                     viewModel.submitOrderRenew(planId, planTitle, method, trackingCode, receiptBase64, note)
                 },

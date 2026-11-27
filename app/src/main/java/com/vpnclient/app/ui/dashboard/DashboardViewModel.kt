@@ -267,8 +267,37 @@ class DashboardViewModel(
             )
         }
         if (visible) {
+            // If previous order was completed or cancelled, clear it so form opens cleanly
+            if (_uiState.value.activeOrderStatus?.isApproved == true || _uiState.value.activeOrderStatus?.isCancelled == true) {
+                _uiState.update {
+                    it.copy(
+                        activeOrderStatus = null,
+                        submittedOrderId = null,
+                        submittedOrderNumber = null
+                    )
+                }
+            }
             loadRenewInfo()
         }
+    }
+
+    fun resetOrderState() {
+        _uiState.update {
+            it.copy(
+                submittedOrderId = null,
+                submittedOrderNumber = null,
+                activeOrderStatus = null,
+                renewalSubmittedSuccess = false,
+                isWalletRenewSuccess = false,
+                renewalErrorMessage = null,
+                couponCodeInput = "",
+                appliedCoupon = null,
+                couponError = null,
+                useWalletPartial = false,
+                renewInfoData = it.renewInfoData?.copy(pendingOrder = null)
+            )
+        }
+        loadRenewInfo()
     }
 
     fun onUseWalletPartialChanged(enabled: Boolean) {
@@ -332,8 +361,17 @@ class DashboardViewModel(
                     )
                 }
                 // If there's an existing pending order, check its latest status
-                data?.pendingOrder?.let { pending ->
-                    checkOrderStatus(orderId = pending.orderId, orderNumber = pending.orderNumber)
+                if (data?.pendingOrder != null) {
+                    checkOrderStatus(orderId = data.pendingOrder.orderId, orderNumber = data.pendingOrder.orderNumber)
+                } else if (_uiState.value.activeOrderStatus?.isCancelled == true || _uiState.value.activeOrderStatus?.isApproved == true) {
+                    // Previous order was completed/cancelled and there is no active pending order on server
+                    _uiState.update {
+                        it.copy(
+                            activeOrderStatus = null,
+                            submittedOrderId = null,
+                            submittedOrderNumber = null
+                        )
+                    }
                 }
             } else {
                 _uiState.update {

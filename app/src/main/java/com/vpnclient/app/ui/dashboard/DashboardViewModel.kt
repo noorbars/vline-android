@@ -70,7 +70,8 @@ class DashboardViewModel(
             _uiState.update {
                 it.copy(
                     isRefreshing = false,
-                    userProfile = updatedProfile
+                    userProfile = updatedProfile,
+                    username = authRepository.getCachedUsername()
                 )
             }
             if (result.isSuccess) {
@@ -326,7 +327,8 @@ class DashboardViewModel(
                         renewInfoData = data,
                         renewInfoError = null,
                         submittedOrderId = data?.pendingOrder?.orderId,
-                        submittedOrderNumber = data?.pendingOrder?.orderNumber
+                        submittedOrderNumber = data?.pendingOrder?.orderNumber,
+                        username = authRepository.getCachedUsername()
                     )
                 }
                 // If there's an existing pending order, check its latest status

@@ -32,14 +32,17 @@ class AuthRepository(private val preferenceManager: PreferenceManager) {
                     val body = response.body()!!
                     if (body.success && body.data != null) {
                         val data = body.data
-                        preferenceManager.username = username.trim()
+                        val resolvedUsername = data.email?.takeIf { it.isNotBlank() }
+                            ?: data.username?.takeIf { it.isNotBlank() }
+                            ?: username.trim()
+                        preferenceManager.username = resolvedUsername
                         preferenceManager.password = password.trim()
                         preferenceManager.subUrl = data.subUrl
 
                         // Parse expire_date from Cloudflare D1
                         val expireTimestamp = parseExpireDate(data.expireDate)
                         val profile = UserProfile(
-                            username = username.trim(),
+                            username = resolvedUsername,
                             expireTimestamp = expireTimestamp
                         )
                         preferenceManager.cachedUserProfile = profile

@@ -28,7 +28,9 @@ data class WorkerLoginResponse(
 data class WorkerSubscriptionData(
     @SerializedName("sub_url") val subUrl: String?,
     @SerializedName("expire_date") val expireDate: String?,
-    @SerializedName("title") val title: String?
+    @SerializedName("title") val title: String?,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("username") val username: String? = null
 )
 
 data class RenewalRequest(
@@ -83,6 +85,7 @@ data class CardInfoDto(
 
 data class SubscriptionStatusDto(
     @SerializedName("username") val username: String,
+    @SerializedName("email") val email: String? = null,
     @SerializedName("title") val title: String?,
     @SerializedName("expire_date") val expireDate: String?,
     @SerializedName("is_active") val isActive: Boolean,

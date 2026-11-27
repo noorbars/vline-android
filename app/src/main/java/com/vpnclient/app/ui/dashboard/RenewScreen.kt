@@ -564,13 +564,12 @@ fun RenewScreenContent(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Button(
+                        OutlinedButton(
                             onClick = onDismiss,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(46.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B))
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("بستن پنجره", fontSize = 13.sp, color = TextPrimary)
                         }
@@ -622,8 +621,8 @@ fun RenewScreenContent(
                         val subStatus = renewData?.subscription
                         if (subStatus != null) {
                             val isExp = subStatus.isExpired
-                            val bgColor = if (isExp) AccentRed.copy(alpha = 0.12f) else Color(0xFF0F172A)
-                            val borderColor = if (isExp) AccentRed.copy(alpha = 0.4f) else CardBorder
+                            val bgColor = if (isExp) AccentRed.copy(alpha = 0.12f) else Color(0xFFF3F0FF)
+                            val borderColor = if (isExp) AccentRed.copy(alpha = 0.4f) else Color(0xFFDDD6FE)
 
                             Box(
                                 modifier = Modifier
@@ -1054,10 +1053,10 @@ fun RenewScreenContent(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFF0F172A))
-                                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                                .padding(14.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF111319))
+                                .border(1.dp, Color(0xFF2A2D3C), RoundedCornerShape(16.dp))
+                                .padding(16.dp)
                         ) {
                             Column {
                                 Row(
@@ -1069,13 +1068,13 @@ fun RenewScreenContent(
                                         Icon(
                                             imageVector = Icons.Default.CreditCard,
                                             contentDescription = null,
-                                            tint = PrimaryBlue,
+                                            tint = Color(0xFF2DD4BF),
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = "شماره کارت بانکی",
-                                            color = TextSecondary,
+                                            color = Color(0xFF94A3B8),
                                             fontSize = 12.sp
                                         )
                                     }
@@ -1091,7 +1090,7 @@ fun RenewScreenContent(
                                         Icon(
                                             imageVector = Icons.Default.ContentCopy,
                                             contentDescription = "کپی",
-                                            tint = PrimaryBlue,
+                                            tint = Color(0xFF2DD4BF),
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -1099,14 +1098,14 @@ fun RenewScreenContent(
 
                                 Text(
                                     text = PersianDigits.convert(cardNumber.chunked(4).joinToString(" - ")),
-                                    color = TextPrimary,
-                                    fontSize = 17.sp,
+                                    color = Color.White,
+                                    fontSize = 19.sp,
                                     fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp,
+                                    letterSpacing = 1.5.sp,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
+                                        .padding(vertical = 8.dp)
                                         .clickable {
                                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                             clipboard.setPrimaryClip(ClipData.newPlainText("Card Number", cardNumber))
@@ -1116,18 +1115,18 @@ fun RenewScreenContent(
 
                                 Text(
                                     text = "به نام: $cardName",
-                                    color = TextMuted,
-                                    fontSize = 12.sp,
+                                    color = Color(0xFFCBD5E1),
+                                    fontSize = 13.sp,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
                                 if (appliedCoupon != null) {
                                     Text(
                                         text = "مبلغ اصلی: ${PersianDigits.convert(decimalFormatter.format(selectedPlan.price))} تومان",
-                                        color = TextMuted,
+                                        color = Color(0xFF94A3B8),
                                         fontSize = 11.sp,
                                         textDecoration = TextDecoration.LineThrough,
                                         textAlign = TextAlign.Center,
@@ -1147,8 +1146,8 @@ fun RenewScreenContent(
 
                                 Text(
                                     text = "مبلغ قابل پرداخت: ${PersianDigits.convert(decimalFormatter.format(payableCardAmount))} تومان",
-                                    color = PrimaryBlue,
-                                    fontSize = 13.sp,
+                                    color = Color(0xFF38BDF8),
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.fillMaxWidth()

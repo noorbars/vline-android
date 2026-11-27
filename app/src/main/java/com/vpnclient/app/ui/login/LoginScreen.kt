@@ -1,6 +1,7 @@
 package com.vpnclient.app.ui.login
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -101,21 +103,14 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App Branding Icon (Modern obsidian circle with Coral/Amber glow)
-            Box(
+            // App Branding Icon (Official rounded V-Line logo)
+            Image(
+                painter = painterResource(id = com.vpnclient.app.R.drawable.ic_vline_logo),
+                contentDescription = "لوگوی وی‌لاین",
                 modifier = Modifier
                     .size(68.dp)
                     .clip(CircleShape)
-                    .background(HeroCardDark),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = null,
-                    tint = RingCoral,
-                    modifier = Modifier.size(34.dp)
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -163,7 +158,7 @@ fun LoginScreen(
                     .padding(20.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Segmented Mode Selector Pill (ورود | ثبت‌نام | بازیابی رمز)
+                    // Segmented Mode Selector Pill (ورود | ثبت‌نام)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -204,24 +199,6 @@ fun LoginScreen(
                                 text = "ثبت‌نام",
                                 color = if (uiState.authMode == AuthMode.REGISTER) Color.White else TextDarkSecondary,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        // 3. بازیابی رمز
-                        Box(
-                            modifier = Modifier
-                                .weight(1.15f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (uiState.authMode == AuthMode.FORGOT_PASSWORD) HeroCardDark else Color.Transparent)
-                                .clickable { viewModel.setAuthMode(AuthMode.FORGOT_PASSWORD) }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "بازیابی رمز",
-                                color = if (uiState.authMode == AuthMode.FORGOT_PASSWORD) Color.White else TextDarkSecondary,
-                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -492,6 +469,19 @@ fun LoginScreen(
                                 color = Color.White
                             )
                         }
+                    }
+
+                    if (uiState.authMode == AuthMode.FORGOT_PASSWORD) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "بازگشت به صفحه ورود",
+                            color = PrimaryIndigo,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .clickable { viewModel.setAuthMode(AuthMode.LOGIN) }
+                                .padding(vertical = 4.dp, horizontal = 8.dp)
+                        )
                     }
                 }
             }

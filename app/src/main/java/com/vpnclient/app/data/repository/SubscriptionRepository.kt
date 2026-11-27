@@ -166,6 +166,11 @@ class SubscriptionRepository(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 if (body.success && body.data != null) {
+                    val serverEmail = body.data.subscription.email?.takeIf { it.isNotBlank() }
+                    val serverUser = serverEmail ?: body.data.subscription.username.takeIf { it.isNotBlank() }
+                    if (!serverUser.isNullOrBlank()) {
+                        preferenceManager.username = serverUser
+                    }
                     Result.success(body.data)
                 } else {
                     Result.failure(Exception(body.error ?: "اطلاعات تمدید یافت نشد"))

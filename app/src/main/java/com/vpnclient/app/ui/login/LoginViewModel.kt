@@ -58,6 +58,10 @@ class LoginViewModel(
         _uiState.update { it.copy(resetCode = resetCode, errorMessage = null, successMessage = null) }
     }
 
+    fun onReferralCodeChanged(code: String) {
+        _uiState.update { it.copy(referralCode = code.trim(), errorMessage = null) }
+    }
+
     fun onRegisterOtpCodeChanged(code: String) {
         val digits = code.filter { it.isDigit() }.take(6)
         _uiState.update { it.copy(registerOtpCode = digits, errorMessage = null) }
@@ -209,7 +213,13 @@ class LoginViewModel(
         _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
         viewModelScope.launch {
-            val result = authRepository.register(email, pass, otpCode = otp, requireOtp = requireOtp)
+            val result = authRepository.register(
+                email = email,
+                password = pass,
+                otpCode = otp,
+                requireOtp = requireOtp,
+                referralCode = _uiState.value.referralCode
+            )
             result.fold(
                 onSuccess = { response ->
                     val subUrl = response.data?.subUrl

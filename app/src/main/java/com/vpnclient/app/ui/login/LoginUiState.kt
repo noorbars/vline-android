@@ -15,6 +15,7 @@ data class LoginUiState(
     val isRegisterOtpSent: Boolean = false,
     val resendCooldownSeconds: Int = 0,
     val isResendingOtp: Boolean = false,
+    val referralCode: String = "",
     val resetCode: String = "",
     val isResetCodeSent: Boolean = false,
     val isLoading: Boolean = false,

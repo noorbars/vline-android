@@ -1,5 +1,7 @@
 package com.vpnclient.app.ui.login
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -28,9 +30,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
@@ -62,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,6 +96,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -550,6 +556,40 @@ fun LoginScreen(
                                     ),
                                     keyboardOptions = KeyboardOptions(
                                         keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Next
+                                    )
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Referral Code Input (Optional)
+                                OutlinedTextField(
+                                    value = uiState.referralCode,
+                                    onValueChange = viewModel::onReferralCodeChanged,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("کد معرف (اختیاری)") },
+                                    placeholder = { Text("اگر کد معرف دارید وارد کنید", fontSize = 12.sp, color = TextDarkMuted) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.CardGiftcard,
+                                            contentDescription = null,
+                                            tint = TextDarkMuted
+                                        )
+                                    },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PrimaryIndigo,
+                                        unfocusedBorderColor = SurfaceCardBorder,
+                                        focusedContainerColor = BackgroundLight.copy(alpha = 0.5f),
+                                        unfocusedContainerColor = BackgroundLight.copy(alpha = 0.5f),
+                                        focusedTextColor = TextDarkPrimary,
+                                        unfocusedTextColor = TextDarkPrimary,
+                                        focusedLabelColor = PrimaryIndigo,
+                                        unfocusedLabelColor = TextDarkMuted
+                                    ),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Text,
                                         imeAction = ImeAction.Done
                                     ),
                                     keyboardActions = KeyboardActions(
@@ -692,6 +732,36 @@ fun LoginScreen(
                         )
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Support Button for Login / Registration Issues
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.85f))
+                    .border(1.dp, SurfaceCardBorder, RoundedCornerShape(12.dp))
+                    .clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/vlinesup"))
+                        context.startActivity(intent)
+                    }
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Headphones,
+                    contentDescription = null,
+                    tint = PrimaryIndigo,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "مشکلی در ورود یا دریافت کد دارید؟ پشتیبانی تلگرام",
+                    color = PrimaryIndigo,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }

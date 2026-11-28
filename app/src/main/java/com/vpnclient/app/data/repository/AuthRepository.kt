@@ -104,20 +104,23 @@ class AuthRepository(private val preferenceManager: PreferenceManager) {
         email: String,
         password: String,
         otpCode: String? = null,
-        requireOtp: Boolean = false
+        requireOtp: Boolean = false,
+        referralCode: String? = null
     ): Result<RegisterResponse> =
         withContext(Dispatchers.IO) {
             try {
                 val cleanEmail = email.trim()
                 val cleanPass = password.trim()
                 val cleanOtp = otpCode?.trim()
+                val cleanRef = referralCode?.trim()?.takeIf { it.isNotBlank() }
                 val api = ApiClient.getService(preferenceManager)
                 val response = api.register(
                     RegisterRequest(
                         email = cleanEmail,
                         password = cleanPass,
                         otpCode = cleanOtp,
-                        requireOtp = if (requireOtp) true else null
+                        requireOtp = if (requireOtp) true else null,
+                        referralCode = cleanRef
                     )
                 )
 

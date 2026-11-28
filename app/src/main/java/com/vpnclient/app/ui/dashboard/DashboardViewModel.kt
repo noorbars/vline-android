@@ -169,8 +169,39 @@ class DashboardViewModel(
     }
 
     // In-App Update Management
+    private var hasCheckedUpdateThisSession = false
+
     fun setUpdateSheetVisible(visible: Boolean) {
         _uiState.update { it.copy(isUpdateSheetVisible = visible) }
+    }
+
+    fun silentCheckForUpdate(context: Context) {
+        if (hasCheckedUpdateThisSession) return
+        hasCheckedUpdateThisSession = true
+        viewModelScope.launch {
+            val updateManager = UpdateManager(context)
+            val currentVersion = try {
+                val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                pInfo.versionName ?: "1.1"
+            } catch (e: Exception) {
+                "1.1"
+            }
+
+            val result = updateManager.checkForUpdate(currentVersion)
+            if (result.isSuccess) {
+                val info = result.getOrNull()
+                if (info?.hasUpdate == true) {
+                    _uiState.update {
+                        it.copy(
+                            isUpdateSheetVisible = true,
+                            isCheckingUpdate = false,
+                            appUpdateInfo = info,
+                            updateErrorMessage = null
+                        )
+                    }
+                }
+            }
+        }
     }
 
     fun checkForUpdate(context: Context) {

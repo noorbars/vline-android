@@ -24,7 +24,8 @@ data class RegisterRequest(
     @SerializedName("password") val password: String,
     @SerializedName("otp_code") val otpCode: String? = null,
     @SerializedName("require_otp") val requireOtp: Boolean? = null,
-    @SerializedName("first_name") val firstName: String? = null
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("referral_code") val referralCode: String? = null
 )
 
 data class RegisterResponse(

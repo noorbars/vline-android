@@ -7,9 +7,24 @@ data class LoginRequest(
     @SerializedName("password") val password: String
 )
 
-data class RegisterRequest(
+data class SendRegisterOtpRequest(
     @SerializedName("email") val email: String,
     @SerializedName("password") val password: String
+)
+
+data class SendRegisterOtpResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("otp_required") val otpRequired: Boolean = true,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class RegisterRequest(
+    @SerializedName("email") val email: String,
+    @SerializedName("password") val password: String,
+    @SerializedName("otp_code") val otpCode: String? = null,
+    @SerializedName("require_otp") val requireOtp: Boolean? = null,
+    @SerializedName("first_name") val firstName: String? = null
 )
 
 data class RegisterResponse(

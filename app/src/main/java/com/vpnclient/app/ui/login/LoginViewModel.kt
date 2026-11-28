@@ -18,7 +18,10 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    private var resendJob: kotlinx.coroutines.Job? = null
+
     fun setAuthMode(mode: AuthMode) {
+        resendJob?.cancel()
         _uiState.update {
             it.copy(
                 authMode = mode,
@@ -26,7 +29,11 @@ class LoginViewModel(
                 successMessage = null,
                 confirmPassword = "",
                 resetCode = "",
-                isResetCodeSent = false
+                isResetCodeSent = false,
+                registerOtpCode = "",
+                isRegisterOtpSent = false,
+                resendCooldownSeconds = 0,
+                isResendingOtp = false
             )
         }
     }
@@ -51,10 +58,79 @@ class LoginViewModel(
         _uiState.update { it.copy(resetCode = resetCode, errorMessage = null, successMessage = null) }
     }
 
+    fun onRegisterOtpCodeChanged(code: String) {
+        val digits = code.filter { it.isDigit() }.take(6)
+        _uiState.update { it.copy(registerOtpCode = digits, errorMessage = null) }
+    }
+
+    fun cancelRegisterOtp() {
+        resendJob?.cancel()
+        _uiState.update {
+            it.copy(
+                isRegisterOtpSent = false,
+                registerOtpCode = "",
+                resendCooldownSeconds = 0,
+                isResendingOtp = false,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+
+    private fun startResendTimer(seconds: Int = 60) {
+        resendJob?.cancel()
+        _uiState.update { it.copy(resendCooldownSeconds = seconds) }
+        resendJob = viewModelScope.launch {
+            for (i in seconds downTo 1) {
+                _uiState.update { it.copy(resendCooldownSeconds = i) }
+                kotlinx.coroutines.delay(1000)
+            }
+            _uiState.update { it.copy(resendCooldownSeconds = 0) }
+        }
+    }
+
+    fun resendRegisterOtp() {
+        if (_uiState.value.resendCooldownSeconds > 0 || _uiState.value.isResendingOtp) return
+        val email = _uiState.value.username.trim()
+        val password = _uiState.value.password.trim()
+
+        _uiState.update { it.copy(isResendingOtp = true, errorMessage = null, successMessage = null) }
+
+        viewModelScope.launch {
+            val result = authRepository.sendRegisterOtp(email, password)
+            result.fold(
+                onSuccess = { res ->
+                    _uiState.update {
+                        it.copy(
+                            isResendingOtp = false,
+                            successMessage = res.message ?: "کد تایید مجدداً به ایمیل شما ارسال شد.",
+                            errorMessage = null
+                        )
+                    }
+                    startResendTimer(60)
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(
+                            isResendingOtp = false,
+                            errorMessage = err.localizedMessage ?: "خطا در ارسال مجدد کد تایید"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
     fun submit() {
         when (_uiState.value.authMode) {
             AuthMode.LOGIN -> login()
-            AuthMode.REGISTER -> register()
+            AuthMode.REGISTER -> {
+                if (_uiState.value.isRegisterOtpSent) {
+                    verifyRegisterOtpAndComplete()
+                } else {
+                    sendRegisterOtp()
+                }
+            }
             AuthMode.FORGOT_PASSWORD -> {
                 if (_uiState.value.isResetCodeSent) {
                     resetPassword()
@@ -65,7 +141,7 @@ class LoginViewModel(
         }
     }
 
-    fun register() {
+    fun sendRegisterOtp() {
         val email = _uiState.value.username.trim()
         val password = _uiState.value.password.trim()
         val confirm = _uiState.value.confirmPassword.trim()
@@ -86,7 +162,54 @@ class LoginViewModel(
         _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
 
         viewModelScope.launch {
-            val result = authRepository.register(email, password)
+            val result = authRepository.sendRegisterOtp(email, password)
+            result.fold(
+                onSuccess = { response ->
+                    if (response.otpRequired) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isRegisterOtpSent = true,
+                                successMessage = response.message ?: "کد تایید ۶ رقمی به ایمیل شما ارسال شد.",
+                                errorMessage = null
+                            )
+                        }
+                        startResendTimer(60)
+                    } else {
+                        // Direct register if OTP not required by server
+                        performRegistration(email, password, null, false)
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.localizedMessage ?: "خطا در ارسال کد تایید"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun verifyRegisterOtpAndComplete() {
+        val email = _uiState.value.username.trim()
+        val password = _uiState.value.password.trim()
+        val otpCode = _uiState.value.registerOtpCode.trim()
+
+        if (otpCode.length != 6) {
+            _uiState.update { it.copy(errorMessage = "لطفاً کد تایید ۶ رقمی را وارد کنید") }
+            return
+        }
+
+        performRegistration(email, password, otpCode, true)
+    }
+
+    private fun performRegistration(email: String, pass: String, otp: String?, requireOtp: Boolean) {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+
+        viewModelScope.launch {
+            val result = authRepository.register(email, pass, otpCode = otp, requireOtp = requireOtp)
             result.fold(
                 onSuccess = { response ->
                     val subUrl = response.data?.subUrl

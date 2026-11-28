@@ -69,13 +69,57 @@ class AuthRepository(private val preferenceManager: PreferenceManager) {
             }
         }
 
-    suspend fun register(email: String, password: String): Result<RegisterResponse> =
+    suspend fun sendRegisterOtp(email: String, password: String): Result<com.vpnclient.app.data.api.models.SendRegisterOtpResponse> =
         withContext(Dispatchers.IO) {
             try {
                 val cleanEmail = email.trim()
                 val cleanPass = password.trim()
                 val api = ApiClient.getService(preferenceManager)
-                val response = api.register(RegisterRequest(cleanEmail, cleanPass))
+                val response = api.sendRegisterOtp(com.vpnclient.app.data.api.models.SendRegisterOtpRequest(cleanEmail, cleanPass))
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    if (body.success) {
+                        Result.success(body)
+                    } else {
+                        val errMsg = body.error ?: "خطا در ارسال کد تایید"
+                        Result.failure(Exception(errMsg))
+                    }
+                } else {
+                    val errBody = response.errorBody()?.string()
+                    val parsedErr = try {
+                        gson.fromJson(errBody, com.vpnclient.app.data.api.models.SendRegisterOtpResponse::class.java)?.error
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val msg = parsedErr ?: "خطا در ارسال کد تایید (کد ${response.code()})"
+                    Result.failure(Exception(msg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun register(
+        email: String,
+        password: String,
+        otpCode: String? = null,
+        requireOtp: Boolean = false
+    ): Result<RegisterResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanEmail = email.trim()
+                val cleanPass = password.trim()
+                val cleanOtp = otpCode?.trim()
+                val api = ApiClient.getService(preferenceManager)
+                val response = api.register(
+                    RegisterRequest(
+                        email = cleanEmail,
+                        password = cleanPass,
+                        otpCode = cleanOtp,
+                        requireOtp = if (requireOtp) true else null
+                    )
+                )
 
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!

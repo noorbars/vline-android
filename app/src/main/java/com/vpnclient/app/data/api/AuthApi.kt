@@ -29,6 +29,9 @@ interface AuthApi {
     @POST("api/login")
     suspend fun login(@Body request: LoginRequest): Response<WorkerLoginResponse>
 
+    @POST("api/auth/send-register-otp")
+    suspend fun sendRegisterOtp(@Body request: com.vpnclient.app.data.api.models.SendRegisterOtpRequest): Response<com.vpnclient.app.data.api.models.SendRegisterOtpResponse>
+
     @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
 
